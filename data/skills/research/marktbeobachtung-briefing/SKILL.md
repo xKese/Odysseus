@@ -23,7 +23,9 @@ Verwende diesen Skill, wenn ein zusammenfassendes Markt- oder Themen-Briefing er
 3. Lies den fertigen Recherchebericht aus dem Research-Verlauf und destilliere ihn auf die fuenf wichtigsten Befunde plus Stimmungsbild.
 4. Fuelle die M&S-Briefing-Vorlage aus `data/templates/briefings/markt-briefing.md` (oder verwende das Skelett aus dem body_extra). Achte auf Kuerze: maximal eine Seite, Stichpunkte vor Fliesstext.
 5. Haenge den vollstaendigen Quellen-Block an und wende den Hausstandard an (siehe `m-und-s-hausstandard`).
-6. Speichere das Briefing per `manage_documents action=create` mit Titel `Markt-Briefing <Themenfeld> <TT.MM.JJJJ>` zur Freigabe.
+6. Speichere das Briefing per `manage_documents action=create` mit Titel `Markt-Briefing <Themenfeld> <TT.MM.JJJJ>` zur Freigabe. Wenn der Aufruf aus einer geplanten Aufgabe (ScheduledTask, `task_type=llm`) kommt, das Document IMMER mit `release_status=draft` anlegen — der Mitarbeiter prueft am naechsten Werktag.
+
+Hinweis fuer den Admin: Wiederkehrendes Briefing einplanen via `app_api action=call method=POST path=/api/tasks/schedule-skill body={"skill_slug": "marktbeobachtung-briefing", "arguments": "Themenfeld: europaeische Anleihen", "schedule": "daily", "scheduled_time": "08:00"}`. Der Endpoint baut einen ScheduledTask mit dem passenden Slash-Befehl.
 
 ## Pitfalls
 
