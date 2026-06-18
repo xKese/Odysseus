@@ -38,6 +38,13 @@ caldav
 cryptography
 bcrypt
 mcp
+# Kontoabgleich-Skill (data/skills/finance/kontoabgleich/scripts/reconcile.py):
+# pdfplumber liest interne PDF-Kontoauszuege mit Word-Positionen (Soll/Haben
+# anhand x-Position), pandas/openpyxl lesen CSV/XLSX-Bankexporte. Ohne diese
+# Pakete schlaegt der M&S-Kontoabgleich-Skill schon beim Import fehl.
+pdfplumber
+pandas
+openpyxl
 pyotp
 qrcode[pil]
 croniter
