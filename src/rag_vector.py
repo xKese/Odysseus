@@ -340,7 +340,8 @@ class VectorRAG:
     # Search — hybrid: vector similarity + keyword overlap
     # ------------------------------------------------------------------
 
-    def search(self, query: str, k: int = 5, owner: Optional[str] = None) -> List[Dict[str, Any]]:
+    def search(self, query: str, k: int = 5, owner: Optional[str] = None,
+               collection_slug: Optional[str] = None) -> List[Dict[str, Any]]:
         if not self.healthy:
             return []
         if not query or not isinstance(query, str):
@@ -349,7 +350,21 @@ class VectorRAG:
             return []
 
         try:
-            where_filter = {"owner": owner} if owner else None
+            # Hauswissen-Sammlungen werden ueber das Metadatenfeld
+            # ``collection`` gefiltert. Kombinationen mehrerer Felder folgen
+            # der Chroma ``$and``-Syntax; ein einzelnes Feld bleibt als
+            # plain ``{key: value}``-Dict.
+            clauses = []
+            if owner:
+                clauses.append({"owner": owner})
+            if collection_slug:
+                clauses.append({"collection": collection_slug})
+            if not clauses:
+                where_filter = None
+            elif len(clauses) == 1:
+                where_filter = clauses[0]
+            else:
+                where_filter = {"$and": clauses}
             query_words = set(query.lower().split())
             candidates = []
 

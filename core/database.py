@@ -222,6 +222,14 @@ class Document(TimestampMixin, Base):
     # Soft-archive: hidden from the Library's Documents list/search/Tidy until
     # restored. Distinct from is_active (which tracks "open in a session").
     archived        = Column(Boolean, default=False)
+    # Freigabe-Status fuer Meeder & Seifer Phase 1 (Stufe-2-Use-Cases):
+    # ``draft`` = vom Agenten erstellt, noch nicht freigegeben; ``released``
+    # = von einem berechtigten Mitarbeiter geprueft und freigegeben. Nur
+    # die Rolle ``vermoegensverwalter`` oder hoeher (Admin) darf den
+    # Uebergang ``draft -> released`` setzen — abgeprueft in der Route.
+    release_status  = Column(String, default="draft")
+    released_by     = Column(String, nullable=True)
+    released_at     = Column(DateTime, nullable=True)
     # Owner of this document. Documents used to derive ownership from their
     # linked chat session, but a session can be deleted (session_id → NULL via
     # SET NULL), orphaning the doc and making it vanish from the owner's
@@ -767,6 +775,40 @@ def _migrate_add_document_archived_column():
             logging.getLogger(__name__).info("Migrated: added 'archived' to documents")
     except Exception as e:
         logging.getLogger(__name__).warning(f"documents.archived migration failed: {e}")
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+def _migrate_add_document_release_status():
+    """Add Phase-1-Freigabe-Spalten (``release_status``, ``released_by``,
+    ``released_at``) zu ``documents``. Guarded + idempotent."""
+    import sqlite3
+    db_path = DATABASE_URL.replace("sqlite:///", "")
+    if not os.path.exists(db_path):
+        return
+    conn = None
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.execute("PRAGMA table_info(documents)")
+        columns = [row[1] for row in cursor.fetchall()]
+        changed = False
+        if "release_status" not in columns:
+            conn.execute("ALTER TABLE documents ADD COLUMN release_status TEXT DEFAULT 'draft'")
+            changed = True
+        if "released_by" not in columns:
+            conn.execute("ALTER TABLE documents ADD COLUMN released_by TEXT")
+            changed = True
+        if "released_at" not in columns:
+            conn.execute("ALTER TABLE documents ADD COLUMN released_at TIMESTAMP")
+            changed = True
+        if changed:
+            conn.commit()
+            logging.getLogger(__name__).info("Migrated: added Phase-1 release columns to documents")
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"documents.release migration failed: {e}")
     finally:
         try:
             conn.close()
@@ -1712,6 +1754,77 @@ class Integration(TimestampMixin, Base):
     enabled = Column(Boolean, default=True)
 
 
+class KnowledgeCollection(TimestampMixin, Base):
+    """A curated house-knowledge collection (Hauswissen-Sammlung).
+
+    Documents inside the collection share the same role-based ACL. The
+    underlying embeddings still live in the global Chroma store; the
+    `slug` becomes the Chroma metadata filter `collection` so a query
+    can be scoped to one collection without a second vector DB.
+    """
+    __tablename__ = "knowledge_collections"
+
+    id          = Column(String, primary_key=True, index=True)
+    slug        = Column(String, nullable=False, unique=True, index=True)
+    name        = Column(String, nullable=False)
+    description = Column(Text, default="")
+    created_by  = Column(String, nullable=True, index=True)  # admin user that created it
+
+    documents = relationship(
+        "KnowledgeDocument",
+        back_populates="collection",
+        cascade="all, delete-orphan",
+    )
+    acls = relationship(
+        "KnowledgeCollectionAcl",
+        back_populates="collection",
+        cascade="all, delete-orphan",
+    )
+
+
+class KnowledgeCollectionAcl(Base):
+    """One row per (collection, role) → permission grant.
+
+    `role` is a free-form string mapped to the per-user `roles` list
+    in the auth store (e.g. "vermoegensverwalter", "family_office",
+    "kundenbetreuung", "compliance", "admin"). `permission` is one
+    of "read", "write", "admin".
+    """
+    __tablename__ = "knowledge_collection_acls"
+
+    id            = Column(Integer, primary_key=True, autoincrement=True)
+    collection_id = Column(String, ForeignKey("knowledge_collections.id", ondelete="CASCADE"),
+                           nullable=False, index=True)
+    role          = Column(String, nullable=False, index=True)
+    permission    = Column(String, nullable=False, default="read")  # read | write | admin
+
+    collection = relationship("KnowledgeCollection", back_populates="acls")
+
+    __table_args__ = (
+        Index("ix_knowledge_acl_collection_role", "collection_id", "role", unique=True),
+    )
+
+
+class KnowledgeDocument(TimestampMixin, Base):
+    """A single document belonging to a knowledge collection.
+
+    `chroma_doc_id` references the embedding row in ChromaDB (each
+    document may produce many chunks; the id is the parent reference
+    so deletions can remove every chunk by metadata filter).
+    """
+    __tablename__ = "knowledge_documents"
+
+    id            = Column(String, primary_key=True, index=True)
+    collection_id = Column(String, ForeignKey("knowledge_collections.id", ondelete="CASCADE"),
+                           nullable=False, index=True)
+    filename      = Column(String, nullable=False)
+    chroma_doc_id = Column(String, nullable=False, index=True)
+    uploaded_by   = Column(String, nullable=True, index=True)
+    size          = Column(Integer, default=0)
+    mime          = Column(String, nullable=True)
+    chunk_count   = Column(Integer, default=0)
+
+    collection = relationship("KnowledgeCollection", back_populates="documents")
 
 
 
@@ -1806,6 +1919,7 @@ def init_db():
     _migrate_add_task_run_model_column()
     _migrate_add_owner_column()
     _migrate_add_document_archived_column()
+    _migrate_add_document_release_status()
     _migrate_add_last_message_at_column()
     _migrate_add_folder_column()
     _migrate_add_token_columns()

@@ -22,6 +22,19 @@ logger = logging.getLogger(__name__)
 from core.atomic_io import atomic_write_json as _atomic_write_json  # noqa: E402
 from core.middleware import INTERNAL_TOOL_USER  # noqa: E402
 
+# Meeder & Seifer Aufbau-Rollen fuer ACL-Zugriff auf Hauswissen-Sammlungen
+# (siehe routes/knowledge_routes.py). Frei erweiterbar; UI-Auswahl im Admin-
+# Panel nutzt diese Liste als Vorschlag, akzeptiert aber auch beliebige
+# weitere lowercase-strings (z.B. fuer projektspezifische Rollen).
+M_UND_S_ROLES = (
+    "vermoegensverwalter",
+    "family_office",
+    "kundenbetreuung",
+    "compliance",
+    "admin",
+)
+
+
 DEFAULT_PRIVILEGES = {
     "can_use_agent": True,
     "can_use_browser": True,
@@ -374,9 +387,49 @@ class AuthManager:
     def is_admin(self, username: str) -> bool:
         return self.users.get(username, {}).get("is_admin", False)
 
+    def get_user_roles(self, username: str) -> List[str]:
+        """Return the user's role list for ACL checks.
+
+        Roles are free-form lowercase strings (e.g. ``vermoegensverwalter``,
+        ``family_office``, ``kundenbetreuung``, ``compliance``). Admins are
+        treated as members of every role implicitly by the consumer — this
+        method just returns the stored list. Returns ``[]`` for unknown
+        users so consumers don't have to guard the lookup separately.
+        """
+        u = self.users.get((username or "").strip().lower()) or {}
+        roles = u.get("roles") or []
+        return [str(r).strip().lower() for r in roles if str(r).strip()]
+
+    def set_user_roles(self, username: str, roles: List[str], requesting_user: str) -> bool:
+        """Replace the user's role list. Admin only. Normalises to lowercase
+        and de-duplicates; an empty list clears all roles."""
+        username = (username or "").strip().lower()
+        requesting_user = (requesting_user or "").strip().lower()
+        with self._config_lock:
+            if username not in self.users:
+                return False
+            if not self.users.get(requesting_user, {}).get("is_admin"):
+                return False
+            normalised: List[str] = []
+            seen = set()
+            for r in roles or []:
+                key = str(r).strip().lower()
+                if key and key not in seen:
+                    normalised.append(key)
+                    seen.add(key)
+            self._config["users"][username]["roles"] = normalised
+            self._save()
+        logger.info(f"Updated roles for '{username}': {normalised}")
+        return True
+
     def list_users(self) -> List[Dict[str, Any]]:
         return [
-            {"username": u, "is_admin": d.get("is_admin", False), "privileges": self.get_privileges(u)}
+            {
+                "username": u,
+                "is_admin": d.get("is_admin", False),
+                "privileges": self.get_privileges(u),
+                "roles": self.get_user_roles(u),
+            }
             for u, d in self.users.items()
         ]
 
