@@ -434,6 +434,57 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
         finally:
             db.close()
 
+    @router.post("/api/document/{doc_id}/release")
+    async def release_document(
+        request: Request,
+        doc_id: str,
+        released: bool = Query(True),
+    ) -> Dict[str, Any]:
+        """Phase-1-Freigabe-Workflow (Meeder & Seifer): setzt das Dokument
+        auf ``released`` oder zurueck auf ``draft``. Nur Admin oder die
+        Rolle ``vermoegensverwalter`` darf freigeben — bewusst eng, weil
+        ein Freigabe-Eintrag im Audit-Log einen klaren Verantwortlichen
+        ausweisen muss. Vier-Augen-Pruefung folgt in Phase 2.
+        """
+        user = get_current_user(request)
+        if not user:
+            raise HTTPException(401, "Authentifizierung erforderlich")
+        auth_mgr = getattr(request.app.state, "auth_manager", None)
+        is_admin = bool(auth_mgr and auth_mgr.is_admin(user))
+        has_role = False
+        try:
+            if auth_mgr is not None:
+                has_role = "vermoegensverwalter" in (auth_mgr.get_user_roles(user) or [])
+        except Exception:
+            has_role = False
+        if not (is_admin or has_role):
+            raise HTTPException(403, "Freigabe erfordert Rolle 'vermoegensverwalter' oder Admin")
+        from datetime import datetime, timezone
+        db = SessionLocal()
+        try:
+            doc = db.query(Document).filter(Document.id == doc_id).first()
+            if not doc:
+                raise HTTPException(404, "Document not found")
+            _verify_doc_owner(db, doc, user)
+            if released:
+                doc.release_status = "released"
+                doc.released_by = user
+                doc.released_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            else:
+                doc.release_status = "draft"
+                doc.released_by = None
+                doc.released_at = None
+            db.commit()
+            return {
+                "ok": True,
+                "id": doc_id,
+                "release_status": doc.release_status,
+                "released_by": doc.released_by,
+                "released_at": doc.released_at.isoformat() + "Z" if doc.released_at else None,
+            }
+        finally:
+            db.close()
+
     # ---- POST /api/document/{doc_id}/extract-pdf-text ----
     @router.post("/api/document/{doc_id}/extract-pdf-text")
     async def extract_pdf_text(request: Request, doc_id: str) -> Dict[str, Any]:

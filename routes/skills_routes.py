@@ -1113,6 +1113,37 @@ def setup_skills_routes(skills_manager: SkillsManager) -> APIRouter:
         idx = skills_manager.index_for(owner=user)
         return {"index": idx, "count": len(idx)}
 
+    @router.get("/metrics")
+    async def get_metrics(request: Request):
+        """Phase-1-Telemetrie: Aggregierte Nutzung je Skill (Aufrufe gesamt,
+        letzte Verwendung, gleitender Mittelwert der Laufzeit in ms).
+
+        Admins sehen die Gesamtsicht ueber alle Owner, andere Nutzer nur
+        ihre eigenen Skills (zusammen mit allen ``shared``-Skills, die fuer
+        sie sichtbar sind). Quelle ist das ``_usage.json``-Sidecar — kein
+        DB-Hit, kein Performance-Risiko.
+        """
+        require_admin(request)
+        usage = skills_manager._load_usage()  # type: ignore[attr-defined]
+        rows = []
+        for key, e in (usage or {}).items():
+            if not isinstance(e, dict):
+                continue
+            if "::" in key:
+                owner, name = key.split("::", 1)
+            else:
+                owner, name = "", key
+            rows.append({
+                "skill": name,
+                "owner": owner or None,
+                "uses": int(e.get("uses", 0) or 0),
+                "last_used": e.get("last_used"),
+                "avg_duration_ms": e.get("avg_duration_ms"),
+                "samples": len(e.get("durations_ms") or []),
+            })
+        rows.sort(key=lambda r: (-(r["uses"] or 0), r["skill"]))
+        return {"metrics": rows, "count": len(rows)}
+
     @router.get("/slash-catalog")
     async def get_slash_catalog(request: Request):
         """Return skills that are available as slash commands.

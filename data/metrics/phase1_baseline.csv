@@ -1,0 +1,15 @@
+vorgang;vorher_minuten;nachher_minuten;datum;mitarbeiter;skill;notiz
+# Phase-1-Baseline Meeder & Seifer: Vorher-/Nachher-Messung der Bearbeitungszeit pro Vorgang.
+# Vom Pilotteam manuell gefuehrt. Zeitformat in ganzen oder halben Minuten. Datum TT.MM.JJJJ.
+# Spalten:
+#   vorgang        - kurzbezeichnung, z.B. "Fondsanalyse Mandant Mueller"
+#   vorher_minuten - aus dem letzten Quartal ohne KI-Unterstuetzung
+#   nachher_minuten - mit Odysseus-Skill, inkl. Pruefung/Freigabe
+#   datum          - Tag der Nachher-Messung
+#   mitarbeiter    - Kuerzel oder Vorname (kein voller Klarname noetig)
+#   skill          - genutzter Skill (fonds-analyse, kontoabgleich, ...)
+#   notiz          - optional, knapp halten (max. 80 Zeichen)
+#
+# Beispieldatensaetze (loeschen, wenn echte Daten eingetragen werden):
+Fondsanalyse Beispielmandat;60;25;01.07.2026;KS;fonds-analyse;Detailstufe 2
+Kontoabgleich Sparkasse Beispiel;45;10;01.07.2026;KS;kontoabgleich;ohne Differenzen
