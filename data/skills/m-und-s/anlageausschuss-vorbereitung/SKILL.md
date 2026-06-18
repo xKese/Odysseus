@@ -1,14 +1,15 @@
 ---
 name: anlageausschuss-vorbereitung
-description: "Stellt die Sitzungsmappe fuer den Anlageausschuss zusammen: Tagesordnung, freigegebene Reports und Briefings, Beschlussvorschlaege — als Document zur Freigabe und an die Sitzung gebunden."
+description: "Stellt die Sitzungsmappe fuer den Anlageausschuss zusammen: Tagesordnung, freigegebene Reports und Briefings, Beschlussvorschlaege \u2014 als Document zur Freigabe und an die Sitzung gebunden."
 version: 1.0.0
 category: m-und-s
 tags: [anlageausschuss, sitzung, vermoegensverwaltung, m-und-s]
 status: published
 confidence: 0.85
 source: imported
+owner: kese
 shared: true
-created: 2026-06-18T00:00:00Z
+created: "2026-06-18T00:00:00Z"
 ---
 
 ## When to Use
@@ -18,20 +19,20 @@ Triggere diesen Skill, wenn eine Anlageausschuss-Sitzung vorbereitet werden soll
 ## Procedure
 
 1. Klaere die Sitzung: Datum, Titel, Teilnehmer. Wenn die Sitzung noch nicht existiert, lege sie an via `app_api action=call method=POST path=/api/meetings body={"title": "Anlageausschuss <TT.MM.JJJJ>", "meeting_date": "YYYY-MM-DDTHH:MM:00", "location": "...", "attendees": [...]}`.
-2. Sammle die fuer die Sitzung relevanten Reports und Briefings: 
-   - Marktbeobachtungs-Briefings der letzten Woche (`app_api action=call method=GET path=/api/documents/library?release_status=draft` und nach Titel filtern)
-   - Aktuelle Reporting-Entwuerfe und Portfolio-Aufbereitungen
-   - Freigegebene Hauswissen-Dokumente zur Anlagepolitik (`hauswissen-suche` ggf. nutzen)
-3. Identifiziere Beschlussbedarf: Welche Allokations-, Mandanten- oder Strategiethemen brauchen eine Entscheidung? Formuliere je Punkt einen kurzen Tagesordnungs-Eintrag.
-4. Erstelle die Sitzungsmappe als Markdown-Dokument mit Abschnitten:
-   - Kopf: Sitzungstitel, Datum, Ort, Teilnehmer
-   - Tagesordnung (nummerierte Liste)
-   - Vorab-Berichte (Liste der angehaengten Dokumente, mit Status und Freigeber)
-   - Beschlussvorlagen (je Punkt: Sachverhalt, Optionen, Empfehlung)
-   - Naechste Sitzung (Datum-Vorschlag)
-5. Lege die Sitzungsmappe per `manage_documents action=create` mit Titel `Sitzungsmappe Anlageausschuss <TT.MM.JJJJ>` an. ``release_status=draft``.
-6. Haenge das Document an die Sitzung als Protokollvorbereitung: `app_api action=call method=POST path=/api/meetings/{meeting_id}/documents body={"document_id": "<doc_id>", "role": "protocol"}`. Weitere Vorab-Berichte mit `role="decision"` ebenfalls verknuepfen.
-7. Wende den Hausstandard an (siehe `m-und-s-hausstandard`): Tonalitaet, Datum-/Zahlenformat, Disclaimer.
+2. Sammle die fuer die Sitzung relevanten Reports und Briefings:
+3. Marktbeobachtungs-Briefings der letzten Woche (`app_api action=call method=GET path=/api/documents/library?release_status=draft` und nach Titel filtern)
+4. Aktuelle Reporting-Entwuerfe und Portfolio-Aufbereitungen
+5. Freigegebene Hauswissen-Dokumente zur Anlagepolitik (`hauswissen-suche` ggf. nutzen)
+6. Identifiziere Beschlussbedarf: Welche Allokations-, Mandanten- oder Strategiethemen brauchen eine Entscheidung? Formuliere je Punkt einen kurzen Tagesordnungs-Eintrag.
+7. Erstelle die Sitzungsmappe als Markdown-Dokument mit Abschnitten:
+8. Kopf: Sitzungstitel, Datum, Ort, Teilnehmer
+9. Tagesordnung (nummerierte Liste)
+10. Vorab-Berichte (Liste der angehaengten Dokumente, mit Status und Freigeber)
+11. Beschlussvorlagen (je Punkt: Sachverhalt, Optionen, Empfehlung)
+12. Naechste Sitzung (Datum-Vorschlag)
+13. Lege die Sitzungsmappe per `manage_documents action=create` mit Titel `Sitzungsmappe Anlageausschuss <TT.MM.JJJJ>` an. ``release_status=draft``.
+14. Haenge das Document an die Sitzung als Protokollvorbereitung: `app_api action=call method=POST path=/api/meetings/{meeting_id}/documents body={"document_id": "<doc_id>", "role": "protocol"}`. Weitere Vorab-Berichte mit `role="decision"` ebenfalls verknuepfen.
+15. Wende den Hausstandard an (siehe `m-und-s-hausstandard`): Tonalitaet, Datum-/Zahlenformat, Disclaimer.
 
 ## Pitfalls
 

@@ -7,8 +7,9 @@ tags: [portfolio, vermoegensverwaltung, reporting, m-und-s]
 status: published
 confidence: 0.85
 source: imported
+owner: kese
 shared: true
-created: 2026-06-18T00:00:00Z
+created: "2026-06-18T00:00:00Z"
 ---
 
 ## When to Use
@@ -41,8 +42,6 @@ Triggere diesen Skill, wenn der Nutzer eine Auswertung, Aufbereitung oder Uebers
 - Auffaelligkeiten (Cash-Quote, Klumpenrisiken, Fremdwaehrung) sind benannt oder explizit als "keine" markiert.
 - Hausstandard angewendet (Datumsformat, Tabellenformat, Disclaimer).
 - Bei Persistierung als Document: `release_status=draft` und Hinweis "Entwurf — vor Versand pruefen".
-
-## Detail: Erwartete Eingangs-Daten
 
 Der Snapshot wird per CSV/XLSX aus der Family-Office-Software exportiert. Akzeptierte Spalten (Header-Aliase werden automatisch erkannt):
 
