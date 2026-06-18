@@ -495,6 +495,67 @@
     </div>
   </div>
 
+  <!-- Portfolio-Panel (Meeder & Seifer, Phase 2) -->
+  <div id="portfolio-modal" class="modal hidden">
+    <div class="modal-content admin-modal-content" role="dialog" aria-label="Portfolios" style="background:var(--bg);max-width:1000px;width:94vw;max-height:90vh;display:flex;flex-direction:column;">
+      <div class="modal-header">
+        <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M3 3v18h18"/><path d="M7 14l3-3 4 4 6-6"/></svg>Portfolios</h4>
+        <button class="close-btn" id="close-portfolio-modal" aria-label="Schliessen">&#x2716;</button>
+      </div>
+      <div style="overflow:auto;padding:14px;flex:1;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
+          <h3 style="margin:0;">Mandanten-Portfolios</h3>
+          <button id="portfolio-new-btn" class="primary-btn">+ Neues Portfolio</button>
+        </div>
+        <div id="portfolio-list">Lade…</div>
+        <div id="portfolio-new-form" class="hidden" style="margin-top:12px;padding:10px;border:1px solid var(--border);border-radius:8px;">
+          <h4 style="margin:0 0 8px 0;">Neues Portfolio anlegen</h4>
+          <form id="portfolio-create-form" style="display:flex;flex-direction:column;gap:8px;">
+            <label>Mandantenname<br><input type="text" id="portfolio-mandant" required style="width:100%;padding:6px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;"></label>
+            <label>Beschreibung<br><input type="text" id="portfolio-desc" style="width:100%;padding:6px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;"></label>
+            <label>Basiswaehrung<br><input type="text" id="portfolio-currency" value="EUR" style="width:120px;padding:6px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;"></label>
+            <div style="display:flex;gap:6px;">
+              <button type="submit" class="primary-btn">Anlegen</button>
+              <button type="button" id="portfolio-create-cancel" class="secondary-btn">Abbrechen</button>
+            </div>
+          </form>
+        </div>
+        <div id="portfolio-detail" class="hidden" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Anlageausschuss-Panel (Meeder & Seifer, Phase 2) -->
+  <div id="meetings-modal" class="modal hidden">
+    <div class="modal-content admin-modal-content" role="dialog" aria-label="Anlageausschuss" style="background:var(--bg);max-width:1000px;width:94vw;max-height:90vh;display:flex;flex-direction:column;">
+      <div class="modal-header">
+        <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Anlageausschuss</h4>
+        <button class="close-btn" id="close-meetings-modal" aria-label="Schliessen">&#x2716;</button>
+      </div>
+      <div style="overflow:auto;padding:14px;flex:1;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
+          <h3 style="margin:0;">Sitzungen</h3>
+          <button id="meetings-new-btn" class="primary-btn">+ Neue Sitzung</button>
+        </div>
+        <div id="meetings-list">Lade…</div>
+        <div id="meetings-new-form" class="hidden" style="margin-top:12px;padding:10px;border:1px solid var(--border);border-radius:8px;">
+          <h4 style="margin:0 0 8px 0;">Neue Sitzung anlegen</h4>
+          <form id="meetings-create-form" style="display:flex;flex-direction:column;gap:8px;">
+            <label>Titel<br><input type="text" id="meetings-title" required style="width:100%;padding:6px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;"></label>
+            <label>Datum &amp; Uhrzeit<br><input type="datetime-local" id="meetings-date" required style="padding:6px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;"></label>
+            <label>Ort<br><input type="text" id="meetings-location" style="width:100%;padding:6px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;"></label>
+            <label>Teilnehmer (Komma-getrennt)<br><input type="text" id="meetings-attendees" placeholder="K. Seifer, M. Meeder" style="width:100%;padding:6px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;"></label>
+            <div style="display:flex;gap:6px;">
+              <button type="submit" class="primary-btn">Anlegen</button>
+              <button type="button" id="meetings-create-cancel" class="secondary-btn">Abbrechen</button>
+            </div>
+          </form>
+        </div>
+        <div id="meetings-detail" class="hidden" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Theme Popup (floating panel) -->
   <div id="theme-modal" class="modal hidden">
   <div id="theme-popup" class="modal-content admin-modal-content" role="dialog" aria-label="Theme" style="background:var(--bg)">
@@ -723,6 +784,8 @@
     <button class="icon-rail-btn" id="rail-cookbook" title="Cookbook"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.7"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg></button>
     <button class="icon-rail-btn" id="rail-research" title="Deep Research"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
     <button class="icon-rail-btn" id="rail-knowledge" title="Hauswissen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M8 7h8M8 11h6"/></svg></button>
+    <button class="icon-rail-btn" id="rail-portfolio" title="Portfolios"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 4 4 6-6"/></svg></button>
+    <button class="icon-rail-btn" id="rail-meetings" title="Anlageausschuss"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></button>
     <button class="icon-rail-btn" id="rail-email" title="Email"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></button>
     <button class="icon-rail-btn" id="rail-gallery" title="Gallery"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></button>
     <button class="icon-rail-btn" id="rail-archive" title="Library"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h6M9 11h4"/></svg></button>
@@ -2503,6 +2566,8 @@
 <script type="module" src="/static/js/admin.js"></script>
 <script type="module" src="/static/js/assistant.js"></script>
 <script src="/static/js/knowledge/panel.js"></script>
+<script src="/static/js/portfolio/panel.js"></script>
+<script src="/static/js/meetings/panel.js"></script>
 <script type="module" src="/static/app.js"></script>  <!-- app.js must be LAST -->
 <script type="module" src="/static/js/init.js"></script>
 <script type="module" src="/static/js/a11y.js"></script>

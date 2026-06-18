@@ -1827,6 +1827,117 @@ class KnowledgeDocument(TimestampMixin, Base):
     collection = relationship("KnowledgeCollection", back_populates="documents")
 
 
+# --------------------------------------------------------------------------
+# Phase 2 (Meeder & Seifer): Vermoegensverwaltung — Portfolio-Daten-Schicht
+# --------------------------------------------------------------------------
+#
+# CSV-/XLSX-Importe aus Family-Office-Software werden als ``PortfolioSnapshot``
+# zu einem ``Portfolio`` (= Mandanten-Vermoegen) abgelegt. Jeder Snapshot
+# enthaelt eine Liste von ``Position``-Eintraegen. Die Vektor- und Hauswissen-
+# Tabellen bleiben unberuehrt; Portfoliodaten werden NICHT in ChromaDB
+# indiziert, sondern relational gehalten.
+#
+# Tabellen sind owner-scoped (siehe ``owner``-Spalten); das ACL-Modell aus
+# der Hauswissen-Plattform greift hier bewusst nicht — Portfolio-Daten sind
+# personenbezogen-vertraulich, eine breitere Sichtbarkeit wuerde das
+# DSGVO-/MaRisk-Konzept brechen.
+
+
+class Portfolio(TimestampMixin, Base):
+    """Ein Mandanten-Vermoegen (Family-Office / Vermoegensverwaltung)."""
+    __tablename__ = "portfolios"
+
+    id            = Column(String, primary_key=True, index=True)
+    owner         = Column(String, nullable=True, index=True)
+    mandant_name  = Column(String, nullable=False)
+    description   = Column(Text, default="")
+    base_currency = Column(String, default="EUR")
+
+    snapshots = relationship(
+        "PortfolioSnapshot",
+        back_populates="portfolio",
+        cascade="all, delete-orphan",
+        order_by="PortfolioSnapshot.stichtag.desc()",
+    )
+
+
+class PortfolioSnapshot(TimestampMixin, Base):
+    """Ein Stichtags-Snapshot eines Portfolios (z.B. Quartalsende).
+
+    Ein Portfolio kann mehrere Snapshots haben — der Skill
+    ``portfolio-aufbereitung`` nimmt typischerweise den aktuellsten,
+    Vergleichs-Reports koennen mehrere zueinander stellen.
+    """
+    __tablename__ = "portfolio_snapshots"
+
+    id              = Column(String, primary_key=True, index=True)
+    portfolio_id    = Column(String, ForeignKey("portfolios.id", ondelete="CASCADE"),
+                             nullable=False, index=True)
+    stichtag        = Column(DateTime, nullable=False, index=True)
+    imported_by     = Column(String, nullable=True)
+    source_filename = Column(String, nullable=True)
+    total_value     = Column(Text, nullable=True)  # numerische Summe als String — Praezision wahrt Kontonotation
+
+    portfolio = relationship("Portfolio", back_populates="snapshots")
+    positions = relationship(
+        "Position",
+        back_populates="snapshot",
+        cascade="all, delete-orphan",
+    )
+
+
+class Position(Base):
+    """Eine einzelne Wertpapier-/Cash-Position im Snapshot.
+
+    ``asset_class`` ist eine grobe Klassifikation (Aktien, Renten, Cash,
+    Edelmetalle, Sonstiges), die der Importer aus dem Quelldokument oder
+    aus einer ISIN-Heuristik ableitet. Der Skill rechnet daraus die
+    Allokations-Tabelle hoch.
+    """
+    __tablename__ = "portfolio_positions"
+
+    id             = Column(Integer, primary_key=True, autoincrement=True)
+    snapshot_id    = Column(String, ForeignKey("portfolio_snapshots.id", ondelete="CASCADE"),
+                            nullable=False, index=True)
+    isin           = Column(String, nullable=True, index=True)
+    wkn            = Column(String, nullable=True)
+    name           = Column(String, nullable=False)
+    asset_class    = Column(String, nullable=True)   # Aktien | Renten | Cash | Edelmetalle | Sonstiges
+    quantity       = Column(Text, nullable=True)     # als String wegen Stueckzahl-/Nominal-Mischung
+    currency       = Column(String, default="EUR")
+    market_value   = Column(Text, nullable=True)
+    weight_percent = Column(Text, nullable=True)
+
+    snapshot = relationship("PortfolioSnapshot", back_populates="positions")
+
+
+# --------------------------------------------------------------------------
+# Phase 2: Anlageausschuss-Sitzungen (MeetingMinutes)
+# --------------------------------------------------------------------------
+#
+# Eine Sitzung verbindet Mandanten-/Portfolio-Berichte (als Documents) mit
+# einem Termin (Datum, Ort, Teilnehmer) und einem optionalen Protokoll. Die
+# Tabelle ist absichtlich schlank — die Beschluesse leben weiterhin als
+# eigene Documents mit ``release_status`` aus Phase 1, hier werden nur die
+# Document-IDs als Listen geparkt.
+
+
+class MeetingMinutes(TimestampMixin, Base):
+    """Anlageausschuss- oder vergleichbare Sitzung mit verbundenen Dokumenten."""
+    __tablename__ = "meeting_minutes"
+
+    id                 = Column(String, primary_key=True, index=True)
+    owner              = Column(String, nullable=True, index=True)
+    meeting_date       = Column(DateTime, nullable=False, index=True)
+    title              = Column(String, nullable=False)
+    location           = Column(String, nullable=True)
+    attendees_json     = Column(Text, nullable=True)   # JSON list
+    status             = Column(String, default="planned")  # planned | held | protocol | approved
+    minute_document_id = Column(String, ForeignKey("documents.id", ondelete="SET NULL"), nullable=True)
+    decision_documents_json = Column(Text, nullable=True)   # JSON list of doc-ids
+    next_meeting_date  = Column(DateTime, nullable=True)
+
+
 
 def _migrate_seed_email_account():
     """If email_accounts is empty and settings.json has legacy flat imap_host/smtp_host

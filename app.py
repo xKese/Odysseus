@@ -608,6 +608,14 @@ app.include_router(setup_knowledge_routes(auth_manager))
 from routes.template_routes import setup_template_routes
 app.include_router(setup_template_routes())
 
+# Portfolio-API (Meeder & Seifer, Phase 2)
+from routes.portfolio_routes import setup_portfolio_routes
+app.include_router(setup_portfolio_routes())
+
+# Anlageausschuss-Sitzungen (Meeder & Seifer, Phase 2)
+from routes.meeting_routes import setup_meeting_routes
+app.include_router(setup_meeting_routes())
+
 # Chat
 from routes.chat_routes import setup_chat_routes
 app.include_router(setup_chat_routes(
