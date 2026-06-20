@@ -7,8 +7,9 @@ tags: [aktien, einzelaktie, fundamentalanalyse, vermoegensverwaltung, m-und-s]
 status: published
 confidence: 0.85
 source: imported
+owner: kese
 shared: true
-created: 2026-06-19T00:00:00Z
+created: "2026-06-19T00:00:00Z"
 ---
 
 ## When to Use
@@ -44,8 +45,6 @@ Triggere diesen Skill, wenn der Nutzer eine Aktie, ein boersennotiertes Unterneh
 - Bei Peer-Vergleichen sind unterschiedliche Bilanzierungsstandards (IFRS/US-GAAP) als Fussnote gekennzeichnet.
 - Disclaimer aus Hausstandard, Stichtag der Daten und vollstaendige Quellenangabe sind enthalten.
 - Output ist auf Deutsch, professioneller Ton, ohne emojis ausser dem Warnhinweis fuer fehlende Werte.
-
-## Detail: Kennzahlentabellen
 
 ### Pflichtfelder (Stammdaten)
 
@@ -120,8 +119,6 @@ Triggere diesen Skill, wenn der Nutzer eine Aktie, ein boersennotiertes Unterneh
 | Durchschnittliches Tagesvolumen | Liquiditaetssignal |
 | Bid/Ask-Spread | bei Small- und Mid-Caps zwingend |
 
-## Detail: Ausfuehrlichkeitsstufen
-
 ### Stufe 1 — Kurzuebersicht (Kundenkommunikation)
 
 Praegnante Zusammenfassung fuer Endkunden oder Beratungsgespraeche. Enthaelt: Unternehmen, ISIN, Sektor, Indexzugehoerigkeit; Geschaeftsmodell-Kurzbeschreibung (2-3 Saetze); Hauptkennzahlen (Marktkap, KGV TTM, KBV, Dividendenrendite); Performance 1J/3J/5J sofern verfuegbar; Risikoprofil (Beta, Volatilitaet); Charakteristiken/Chancen/Risiken (je 4-5 Stichpunkte); Fehlende-Kennzahlen-Hinweis. Ton: verstaendlich, ohne uebermaeßige Fachbegriffe, professionell.
@@ -133,8 +130,6 @@ Vollstaendige Analyse fuer interne Entscheidungsprozesse und Anlageausschuss-Vor
 ### Stufe 3 — Peer-Vergleich (mehrere Aktien)
 
 Aufbau: Kennzahlen in Zeilen, Aktien in Spalten. Reihenfolge: (1) Stammdaten, (2) Bewertung, (3) Fundamental, (4) Dividenden, (5) Risiko, (6) Sonstiges. Nach der Tabelle fuer jede Aktie separaten Abschnitt mit den drei Bloecken (Charakteristiken, Chancen, Risiken) anhaengen. Bei DOCX-Output: besten Wert je Zeile fett markieren (bei Bewertung niedrigster Wert "guenstig", bei Marge/ROE hoechster Wert), fehlende Werte mit `(nicht ausgewiesen)`. Bilanzierungsstandard-Unterschiede (IFRS/US-GAAP) als Fussnote zur betroffenen Zeile.
-
-## Detail: DOCX-Output-Struktur
 
 Falls Word-Dokument gewuenscht, verwende `manage_documents action=create` mit `release_status=draft` und folge dieser Gliederung:
 
@@ -151,8 +146,6 @@ Fusszeile: Disclaimer aus Hausstandard
 ```
 
 Farbschema und Schriftarten gemaess Skill `m-und-s-hausstandard`. Hinweis "Entwurf — vor Versand pruefen" am Anfang einfuegen.
-
-## Detail: Beispiel-Workflow
 
 Nutzer laedt einen Geschaeftsbericht der Allianz SE hoch und schreibt "Bitte analysiere diese Aktie":
 
