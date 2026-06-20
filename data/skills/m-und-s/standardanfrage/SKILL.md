@@ -7,8 +7,9 @@ tags: [standardanfrage, kundenkommunikation, faq, m-und-s]
 status: published
 confidence: 0.85
 source: imported
+owner: kese
 shared: true
-created: 2026-06-19T00:00:00Z
+created: "2026-06-19T00:00:00Z"
 ---
 
 ## When to Use
@@ -43,8 +44,6 @@ Triggere diesen Skill, wenn eine konkrete Mandantenanfrage vorliegt und der Mita
 - Bei Auszahlungs-Anfragen ueber 50.000 EUR oder ungewoehnlichen Empfaengerkonten ist der "Sonderfall"-Vermerk gesetzt.
 - Document liegt als `release_status=draft` vor, Hinweis "Entwurf — vor Versand pruefen" am Anfang.
 - Disclaimer und Hausstandard sind angewendet.
-
-## Detail: Bibliothek (Stand 19.06.2026)
 
 - `kosten-und-gebuehren`: Konditionen, Performance Fee, All-in-Fee
 - `steuerliche-aspekte`: Abgeltungssteuer, Quellensteuer, Teilfreistellung

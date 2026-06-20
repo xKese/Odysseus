@@ -7,8 +7,9 @@ tags: [onboarding, neumandat, checklist, kundenkommunikation, m-und-s]
 status: published
 confidence: 0.85
 source: imported
+owner: kese
 shared: true
-created: 2026-06-19T00:00:00Z
+created: "2026-06-19T00:00:00Z"
 ---
 
 ## When to Use
@@ -21,13 +22,13 @@ Triggere diesen Skill, wenn ein Neumandat angenommen wird und der Onboarding-Pro
 2. Lege den Onboarding-Prozess an: `app_api action=call method=POST path=/api/onboarding body={"mandant_name": "<Name>", "onboarding_type": "vermoegensverwaltung", "target_completion_date": "YYYY-MM-DD"}`. Der Endpoint setzt automatisch eine Default-Checkliste je Typ.
 3. Verfeinere die Checkliste falls noetig: `PUT /api/onboarding/{id}` mit `checklist`-Array. Mandantenspezifische Pflichten (z.B. zusaetzliche KYC-Dokumentation, Sondervollmachten) ergaenzen.
 4. Ermittle den genauen Unterlagenbedarf je Schritt:
-   - Aus Hauswissen-Sammlung "Onboarding-Richtlinien" via `hauswissen-suche` (falls vorhanden) — speziell zu Identifikation, Vertragsmustern, Reportingfrequenz.
-   - Bei Family-Office-Onboarding: Familienstruktur und Stiftungen erfragen, konsolidierte Vermoegensuebersicht skizzieren.
-5. Erstelle das Willkommensschreiben via `anschreiben-entwurf`-Skill mit Hausvorlage und folgenden Eckdaten: Begruessung, Bestaetigung des Mandates, Ansprechpartner, naechste Schritte (drei bis fuenf konkrete Punkte), Anlagen-Hinweis fuer mitgesandte Dokumente. `release_status=draft`.
-6. Verknuepfe das Willkommensschreiben mit dem Onboarding-Prozess: `PUT /api/onboarding/{id}` mit `welcome_document_id: <doc-id>`.
-7. Stelle eine Unterlagenliste fuer den Mandanten zusammen (welche Dokumente werden vom Mandanten benoetigt: Ausweis-Kopie, steuerliche Identifikationsnummer, Vorlieben zur Anlagestrategie, etc.) und lege sie als separates Document ab.
-8. Lege optional ein Initial-Briefing fuer das Erstgespraech via `termin-vorbereitung`-Skill an, sofern ein Termin schon angesetzt ist.
-9. Wende den Hausstandard an (siehe Skill `m-und-s-hausstandard`): Anrede, Datumsformat, Disclaimer.
+5. Aus Hauswissen-Sammlung "Onboarding-Richtlinien" via `hauswissen-suche` (falls vorhanden) — speziell zu Identifikation, Vertragsmustern, Reportingfrequenz.
+6. Bei Family-Office-Onboarding: Familienstruktur und Stiftungen erfragen, konsolidierte Vermoegensuebersicht skizzieren.
+7. Erstelle das Willkommensschreiben via `anschreiben-entwurf`-Skill mit Hausvorlage und folgenden Eckdaten: Begruessung, Bestaetigung des Mandates, Ansprechpartner, naechste Schritte (drei bis fuenf konkrete Punkte), Anlagen-Hinweis fuer mitgesandte Dokumente. `release_status=draft`.
+8. Verknuepfe das Willkommensschreiben mit dem Onboarding-Prozess: `PUT /api/onboarding/{id}` mit `welcome_document_id: <doc-id>`.
+9. Stelle eine Unterlagenliste fuer den Mandanten zusammen (welche Dokumente werden vom Mandanten benoetigt: Ausweis-Kopie, steuerliche Identifikationsnummer, Vorlieben zur Anlagestrategie, etc.) und lege sie als separates Document ab.
+10. Lege optional ein Initial-Briefing fuer das Erstgespraech via `termin-vorbereitung`-Skill an, sofern ein Termin schon angesetzt ist.
+11. Wende den Hausstandard an (siehe Skill `m-und-s-hausstandard`): Anrede, Datumsformat, Disclaimer.
 
 ## Pitfalls
 
@@ -47,8 +48,6 @@ Triggere diesen Skill, wenn ein Neumandat angenommen wird und der Onboarding-Pro
 - Unterlagenliste fuer den Mandanten ist erstellt und beinhaltet rechtliche und steuerliche Pflichtangaben.
 - Hausstandard angewendet (Anrede, Datum, Disclaimer).
 - Hinweis "Onboarding gestartet — KYC-Pruefung steht aus" steht in den Notizen, bis die Identifikation bestaetigt ist.
-
-## Detail: Default-Checklisten
 
 Der Endpoint `POST /api/onboarding` setzt automatisch die folgenden Default-Schritte:
 
