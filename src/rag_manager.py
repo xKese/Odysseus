@@ -35,6 +35,17 @@ class RAGManager:
     def search(self, query: str, k: int = 5) -> List[Dict[str, Any]]:
         """Search for documents - delegates to VectorRAG."""
         return self.vector_rag.search(query, k)
+
+    def search_collection(self, query: str, collection_slug: str,
+                          k: int = 5) -> List[Dict[str, Any]]:
+        """Search within a single Hauswissen-Sammlung.
+
+        Filters the vector store on ``metadata['collection'] == slug`` so
+        a query only sees documents that were indexed with that slug. The
+        collection-level ACL check belongs in the caller (route handler);
+        this method assumes the caller has already verified read access.
+        """
+        return self.vector_rag.search(query, k, collection_slug=collection_slug)
     
     def index_personal_documents(
         self,

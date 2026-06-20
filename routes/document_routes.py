@@ -269,6 +269,10 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
         offset: int = Query(0, ge=0),
         limit: int = Query(20, ge=1, le=50),
         archived: bool = Query(False),
+        release_status: Optional[str] = Query(
+            None,
+            description="Meeder & Seifer Phase 2: 'draft' | 'released' | 'all'. Default unrestricted.",
+        ),
     ) -> Dict[str, Any]:
         user = get_current_user(request)
         db = SessionLocal()
@@ -315,6 +319,22 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
                 .filter(Document.is_active == True).filter(_arch_cond)
             )
             q = _owner_session_filter(q, user)
+
+            # Phase-2-Freigabe-Filter (Meeder & Seifer): "draft"/"released"
+            # bzw. None/"all" laesst alles durch. NULL behandeln wir als
+            # "draft", damit Bestandsdokumente vor Phase-1-Migration nicht
+            # spurlos aus der Entwurfsansicht verschwinden.
+            if release_status and release_status.lower() not in ("all", ""):
+                rs = release_status.lower()
+                if rs == "released":
+                    q = q.filter(Document.release_status == "released")
+                elif rs == "draft":
+                    q = q.filter(
+                        or_(
+                            Document.release_status == "draft",
+                            Document.release_status.is_(None),
+                        )
+                    )
 
             # Search filter — split on whitespace and require EACH term to
             # match (title OR content). A single `%foo bar%` LIKE only matched
@@ -367,6 +387,9 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
                     "version_count": doc.version_count,
                     "created_at": (doc.created_at.isoformat() + "Z") if doc.created_at else None,
                     "updated_at": (doc.updated_at.isoformat() + "Z") if doc.updated_at else None,
+                    "release_status": getattr(doc, "release_status", None) or "draft",
+                    "released_by": getattr(doc, "released_by", None),
+                    "released_at": (doc.released_at.isoformat() + "Z") if getattr(doc, "released_at", None) else None,
                 })
 
             return {
@@ -431,6 +454,57 @@ def setup_document_routes(session_manager, upload_handler=None) -> APIRouter:
             doc.archived = bool(archived)
             db.commit()
             return {"ok": True, "id": doc_id, "archived": doc.archived}
+        finally:
+            db.close()
+
+    @router.post("/api/document/{doc_id}/release")
+    async def release_document(
+        request: Request,
+        doc_id: str,
+        released: bool = Query(True),
+    ) -> Dict[str, Any]:
+        """Phase-1-Freigabe-Workflow (Meeder & Seifer): setzt das Dokument
+        auf ``released`` oder zurueck auf ``draft``. Nur Admin oder die
+        Rolle ``vermoegensverwalter`` darf freigeben — bewusst eng, weil
+        ein Freigabe-Eintrag im Audit-Log einen klaren Verantwortlichen
+        ausweisen muss. Vier-Augen-Pruefung folgt in Phase 2.
+        """
+        user = get_current_user(request)
+        if not user:
+            raise HTTPException(401, "Authentifizierung erforderlich")
+        auth_mgr = getattr(request.app.state, "auth_manager", None)
+        is_admin = bool(auth_mgr and auth_mgr.is_admin(user))
+        has_role = False
+        try:
+            if auth_mgr is not None:
+                has_role = "vermoegensverwalter" in (auth_mgr.get_user_roles(user) or [])
+        except Exception:
+            has_role = False
+        if not (is_admin or has_role):
+            raise HTTPException(403, "Freigabe erfordert Rolle 'vermoegensverwalter' oder Admin")
+        from datetime import datetime, timezone
+        db = SessionLocal()
+        try:
+            doc = db.query(Document).filter(Document.id == doc_id).first()
+            if not doc:
+                raise HTTPException(404, "Document not found")
+            _verify_doc_owner(db, doc, user)
+            if released:
+                doc.release_status = "released"
+                doc.released_by = user
+                doc.released_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            else:
+                doc.release_status = "draft"
+                doc.released_by = None
+                doc.released_at = None
+            db.commit()
+            return {
+                "ok": True,
+                "id": doc_id,
+                "release_status": doc.release_status,
+                "released_by": doc.released_by,
+                "released_at": doc.released_at.isoformat() + "Z" if doc.released_at else None,
+            }
         finally:
             db.close()
 

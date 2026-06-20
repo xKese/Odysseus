@@ -222,6 +222,14 @@ class Document(TimestampMixin, Base):
     # Soft-archive: hidden from the Library's Documents list/search/Tidy until
     # restored. Distinct from is_active (which tracks "open in a session").
     archived        = Column(Boolean, default=False)
+    # Freigabe-Status fuer Meeder & Seifer Phase 1 (Stufe-2-Use-Cases):
+    # ``draft`` = vom Agenten erstellt, noch nicht freigegeben; ``released``
+    # = von einem berechtigten Mitarbeiter geprueft und freigegeben. Nur
+    # die Rolle ``vermoegensverwalter`` oder hoeher (Admin) darf den
+    # Uebergang ``draft -> released`` setzen — abgeprueft in der Route.
+    release_status  = Column(String, default="draft")
+    released_by     = Column(String, nullable=True)
+    released_at     = Column(DateTime, nullable=True)
     # Owner of this document. Documents used to derive ownership from their
     # linked chat session, but a session can be deleted (session_id → NULL via
     # SET NULL), orphaning the doc and making it vanish from the owner's
@@ -767,6 +775,86 @@ def _migrate_add_document_archived_column():
             logging.getLogger(__name__).info("Migrated: added 'archived' to documents")
     except Exception as e:
         logging.getLogger(__name__).warning(f"documents.archived migration failed: {e}")
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+def _migrate_add_meeting_type_columns():
+    """Phase 4 (Meeder & Seifer): erweitere ``meeting_minutes`` um
+    ``meeting_type``, ``mandant_name`` und ``preparation_document_id``.
+    Idempotent, guarded — bestehende Anlageausschuss-Sitzungen erhalten
+    den Default-Typ ``anlageausschuss`` und bleiben sichtbar."""
+    import sqlite3
+    db_path = DATABASE_URL.replace("sqlite:///", "")
+    if not os.path.exists(db_path):
+        return
+    conn = None
+    try:
+        conn = sqlite3.connect(db_path)
+        # Tabelle wird per create_all() angelegt, aber bei Bestandsdatenbanken
+        # koennte sie schon ohne die neuen Spalten existieren.
+        existing_tables = [r[0] for r in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='meeting_minutes'"
+        )]
+        if "meeting_minutes" not in existing_tables:
+            return
+        cols = [r[1] for r in conn.execute("PRAGMA table_info(meeting_minutes)").fetchall()]
+        changed = False
+        if "meeting_type" not in cols:
+            conn.execute(
+                "ALTER TABLE meeting_minutes ADD COLUMN meeting_type TEXT DEFAULT 'anlageausschuss'"
+            )
+            changed = True
+        if "mandant_name" not in cols:
+            conn.execute("ALTER TABLE meeting_minutes ADD COLUMN mandant_name TEXT")
+            changed = True
+        if "preparation_document_id" not in cols:
+            conn.execute("ALTER TABLE meeting_minutes ADD COLUMN preparation_document_id TEXT")
+            changed = True
+        if changed:
+            conn.commit()
+            logging.getLogger(__name__).info(
+                "Migrated: added Phase-4 meeting-type columns to meeting_minutes"
+            )
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"meeting_minutes phase4 migration failed: {e}")
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+def _migrate_add_document_release_status():
+    """Add Phase-1-Freigabe-Spalten (``release_status``, ``released_by``,
+    ``released_at``) zu ``documents``. Guarded + idempotent."""
+    import sqlite3
+    db_path = DATABASE_URL.replace("sqlite:///", "")
+    if not os.path.exists(db_path):
+        return
+    conn = None
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.execute("PRAGMA table_info(documents)")
+        columns = [row[1] for row in cursor.fetchall()]
+        changed = False
+        if "release_status" not in columns:
+            conn.execute("ALTER TABLE documents ADD COLUMN release_status TEXT DEFAULT 'draft'")
+            changed = True
+        if "released_by" not in columns:
+            conn.execute("ALTER TABLE documents ADD COLUMN released_by TEXT")
+            changed = True
+        if "released_at" not in columns:
+            conn.execute("ALTER TABLE documents ADD COLUMN released_at TIMESTAMP")
+            changed = True
+        if changed:
+            conn.commit()
+            logging.getLogger(__name__).info("Migrated: added Phase-1 release columns to documents")
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"documents.release migration failed: {e}")
     finally:
         try:
             conn.close()
@@ -1712,6 +1800,226 @@ class Integration(TimestampMixin, Base):
     enabled = Column(Boolean, default=True)
 
 
+class KnowledgeCollection(TimestampMixin, Base):
+    """A curated house-knowledge collection (Hauswissen-Sammlung).
+
+    Documents inside the collection share the same role-based ACL. The
+    underlying embeddings still live in the global Chroma store; the
+    `slug` becomes the Chroma metadata filter `collection` so a query
+    can be scoped to one collection without a second vector DB.
+    """
+    __tablename__ = "knowledge_collections"
+
+    id          = Column(String, primary_key=True, index=True)
+    slug        = Column(String, nullable=False, unique=True, index=True)
+    name        = Column(String, nullable=False)
+    description = Column(Text, default="")
+    created_by  = Column(String, nullable=True, index=True)  # admin user that created it
+
+    documents = relationship(
+        "KnowledgeDocument",
+        back_populates="collection",
+        cascade="all, delete-orphan",
+    )
+    acls = relationship(
+        "KnowledgeCollectionAcl",
+        back_populates="collection",
+        cascade="all, delete-orphan",
+    )
+
+
+class KnowledgeCollectionAcl(Base):
+    """One row per (collection, role) → permission grant.
+
+    `role` is a free-form string mapped to the per-user `roles` list
+    in the auth store (e.g. "vermoegensverwalter", "family_office",
+    "kundenbetreuung", "compliance", "admin"). `permission` is one
+    of "read", "write", "admin".
+    """
+    __tablename__ = "knowledge_collection_acls"
+
+    id            = Column(Integer, primary_key=True, autoincrement=True)
+    collection_id = Column(String, ForeignKey("knowledge_collections.id", ondelete="CASCADE"),
+                           nullable=False, index=True)
+    role          = Column(String, nullable=False, index=True)
+    permission    = Column(String, nullable=False, default="read")  # read | write | admin
+
+    collection = relationship("KnowledgeCollection", back_populates="acls")
+
+    __table_args__ = (
+        Index("ix_knowledge_acl_collection_role", "collection_id", "role", unique=True),
+    )
+
+
+class KnowledgeDocument(TimestampMixin, Base):
+    """A single document belonging to a knowledge collection.
+
+    `chroma_doc_id` references the embedding row in ChromaDB (each
+    document may produce many chunks; the id is the parent reference
+    so deletions can remove every chunk by metadata filter).
+    """
+    __tablename__ = "knowledge_documents"
+
+    id            = Column(String, primary_key=True, index=True)
+    collection_id = Column(String, ForeignKey("knowledge_collections.id", ondelete="CASCADE"),
+                           nullable=False, index=True)
+    filename      = Column(String, nullable=False)
+    chroma_doc_id = Column(String, nullable=False, index=True)
+    uploaded_by   = Column(String, nullable=True, index=True)
+    size          = Column(Integer, default=0)
+    mime          = Column(String, nullable=True)
+    chunk_count   = Column(Integer, default=0)
+
+    collection = relationship("KnowledgeCollection", back_populates="documents")
+
+
+# --------------------------------------------------------------------------
+# Phase 2 (Meeder & Seifer): Vermoegensverwaltung — Portfolio-Daten-Schicht
+# --------------------------------------------------------------------------
+#
+# CSV-/XLSX-Importe aus Family-Office-Software werden als ``PortfolioSnapshot``
+# zu einem ``Portfolio`` (= Mandanten-Vermoegen) abgelegt. Jeder Snapshot
+# enthaelt eine Liste von ``Position``-Eintraegen. Die Vektor- und Hauswissen-
+# Tabellen bleiben unberuehrt; Portfoliodaten werden NICHT in ChromaDB
+# indiziert, sondern relational gehalten.
+#
+# Tabellen sind owner-scoped (siehe ``owner``-Spalten); das ACL-Modell aus
+# der Hauswissen-Plattform greift hier bewusst nicht — Portfolio-Daten sind
+# personenbezogen-vertraulich, eine breitere Sichtbarkeit wuerde das
+# DSGVO-/MaRisk-Konzept brechen.
+
+
+class Portfolio(TimestampMixin, Base):
+    """Ein Mandanten-Vermoegen (Family-Office / Vermoegensverwaltung)."""
+    __tablename__ = "portfolios"
+
+    id            = Column(String, primary_key=True, index=True)
+    owner         = Column(String, nullable=True, index=True)
+    mandant_name  = Column(String, nullable=False)
+    description   = Column(Text, default="")
+    base_currency = Column(String, default="EUR")
+
+    snapshots = relationship(
+        "PortfolioSnapshot",
+        back_populates="portfolio",
+        cascade="all, delete-orphan",
+        order_by="PortfolioSnapshot.stichtag.desc()",
+    )
+
+
+class PortfolioSnapshot(TimestampMixin, Base):
+    """Ein Stichtags-Snapshot eines Portfolios (z.B. Quartalsende).
+
+    Ein Portfolio kann mehrere Snapshots haben — der Skill
+    ``portfolio-aufbereitung`` nimmt typischerweise den aktuellsten,
+    Vergleichs-Reports koennen mehrere zueinander stellen.
+    """
+    __tablename__ = "portfolio_snapshots"
+
+    id              = Column(String, primary_key=True, index=True)
+    portfolio_id    = Column(String, ForeignKey("portfolios.id", ondelete="CASCADE"),
+                             nullable=False, index=True)
+    stichtag        = Column(DateTime, nullable=False, index=True)
+    imported_by     = Column(String, nullable=True)
+    source_filename = Column(String, nullable=True)
+    total_value     = Column(Text, nullable=True)  # numerische Summe als String — Praezision wahrt Kontonotation
+
+    portfolio = relationship("Portfolio", back_populates="snapshots")
+    positions = relationship(
+        "Position",
+        back_populates="snapshot",
+        cascade="all, delete-orphan",
+    )
+
+
+class Position(Base):
+    """Eine einzelne Wertpapier-/Cash-Position im Snapshot.
+
+    ``asset_class`` ist eine grobe Klassifikation (Aktien, Renten, Cash,
+    Edelmetalle, Sonstiges), die der Importer aus dem Quelldokument oder
+    aus einer ISIN-Heuristik ableitet. Der Skill rechnet daraus die
+    Allokations-Tabelle hoch.
+    """
+    __tablename__ = "portfolio_positions"
+
+    id             = Column(Integer, primary_key=True, autoincrement=True)
+    snapshot_id    = Column(String, ForeignKey("portfolio_snapshots.id", ondelete="CASCADE"),
+                            nullable=False, index=True)
+    isin           = Column(String, nullable=True, index=True)
+    wkn            = Column(String, nullable=True)
+    name           = Column(String, nullable=False)
+    asset_class    = Column(String, nullable=True)   # Aktien | Renten | Cash | Edelmetalle | Sonstiges
+    quantity       = Column(Text, nullable=True)     # als String wegen Stueckzahl-/Nominal-Mischung
+    currency       = Column(String, default="EUR")
+    market_value   = Column(Text, nullable=True)
+    weight_percent = Column(Text, nullable=True)
+
+    snapshot = relationship("PortfolioSnapshot", back_populates="positions")
+
+
+# --------------------------------------------------------------------------
+# Phase 2: Anlageausschuss-Sitzungen (MeetingMinutes)
+# --------------------------------------------------------------------------
+#
+# Eine Sitzung verbindet Mandanten-/Portfolio-Berichte (als Documents) mit
+# einem Termin (Datum, Ort, Teilnehmer) und einem optionalen Protokoll. Die
+# Tabelle ist absichtlich schlank — die Beschluesse leben weiterhin als
+# eigene Documents mit ``release_status`` aus Phase 1, hier werden nur die
+# Document-IDs als Listen geparkt.
+
+
+class MeetingMinutes(TimestampMixin, Base):
+    """Anlageausschuss-, Mandanten- oder vergleichbare Sitzung mit verbundenen Dokumenten.
+
+    Phase 4 (Meeder & Seifer) hat die Tabelle um ``meeting_type``, ``mandant_name``
+    und ``preparation_document_id`` erweitert, damit der Mandanten-Termin
+    (Briefing-Mappe je Mandant) das gleiche Modell wie der Anlageausschuss
+    nutzt. Bestandsdatensaetze ohne Typ-Feld werden als ``anlageausschuss``
+    interpretiert (Migration setzt den Default).
+    """
+    __tablename__ = "meeting_minutes"
+
+    id                 = Column(String, primary_key=True, index=True)
+    owner              = Column(String, nullable=True, index=True)
+    meeting_date       = Column(DateTime, nullable=False, index=True)
+    title              = Column(String, nullable=False)
+    location           = Column(String, nullable=True)
+    attendees_json     = Column(Text, nullable=True)   # JSON list
+    status             = Column(String, default="planned")  # planned | held | protocol | approved
+    minute_document_id = Column(String, ForeignKey("documents.id", ondelete="SET NULL"), nullable=True)
+    decision_documents_json = Column(Text, nullable=True)   # JSON list of doc-ids
+    next_meeting_date  = Column(DateTime, nullable=True)
+    # Phase 4: Mandantentermine + Briefing-Mappen-Verknuepfung
+    meeting_type       = Column(String, default="anlageausschuss", index=True)
+    mandant_name       = Column(String, nullable=True, index=True)
+    preparation_document_id = Column(String, ForeignKey("documents.id", ondelete="SET NULL"), nullable=True)
+
+
+# --------------------------------------------------------------------------
+# Phase 4 (Meeder & Seifer): Onboarding-Prozesse fuer Neumandate
+# --------------------------------------------------------------------------
+#
+# Strukturierter Status-Tracker je Mandant: Checkliste, Willkommens-Document,
+# Zieldatum. Bewusst schlank — Beleg-Dokumente leben weiterhin als ``Document``
+# mit ``release_status``; hier nur die Verknuepfungen + Status der einzelnen
+# Checklist-Schritte.
+
+
+class OnboardingProcess(TimestampMixin, Base):
+    """Onboarding eines Neumandats — Checkliste + Begleitdokumente."""
+    __tablename__ = "onboarding_processes"
+
+    id                       = Column(String, primary_key=True, index=True)
+    owner                    = Column(String, nullable=True, index=True)
+    mandant_name             = Column(String, nullable=False, index=True)
+    onboarding_type          = Column(String, default="vermoegensverwaltung")  # vermoegensverwaltung | family_office | beratung
+    status                   = Column(String, default="started")  # started | docs_pending | review | completed | abandoned
+    started_at               = Column(DateTime, default=utcnow_naive, nullable=False)
+    target_completion_date   = Column(DateTime, nullable=True)
+    completed_at             = Column(DateTime, nullable=True)
+    checklist_json           = Column(Text, nullable=True)   # JSON list of {step, status, evidence_document_id?}
+    welcome_document_id      = Column(String, ForeignKey("documents.id", ondelete="SET NULL"), nullable=True)
+    notes                    = Column(Text, nullable=True)
 
 
 
@@ -1806,6 +2114,8 @@ def init_db():
     _migrate_add_task_run_model_column()
     _migrate_add_owner_column()
     _migrate_add_document_archived_column()
+    _migrate_add_document_release_status()
+    _migrate_add_meeting_type_columns()
     _migrate_add_last_message_at_column()
     _migrate_add_folder_column()
     _migrate_add_token_columns()

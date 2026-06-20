@@ -600,6 +600,30 @@ app.include_router(memory_router)
 from routes.skills_routes import setup_skills_routes
 app.include_router(setup_skills_routes(skills_manager))
 
+# Hauswissen-Plattform (Meeder & Seifer, Phase 1)
+from routes.knowledge_routes import setup_knowledge_routes
+app.include_router(setup_knowledge_routes(auth_manager))
+
+# Hausvorlagen-API (Meeder & Seifer, Phase 1)
+from routes.template_routes import setup_template_routes
+app.include_router(setup_template_routes())
+
+# Portfolio-API (Meeder & Seifer, Phase 2)
+from routes.portfolio_routes import setup_portfolio_routes
+app.include_router(setup_portfolio_routes())
+
+# Anlageausschuss-Sitzungen (Meeder & Seifer, Phase 2)
+from routes.meeting_routes import setup_meeting_routes
+app.include_router(setup_meeting_routes())
+
+# Standardanfragen-Bibliothek (Meeder & Seifer, Phase 4)
+from routes.standardanfragen_routes import setup_standardanfragen_routes
+app.include_router(setup_standardanfragen_routes())
+
+# Onboarding-Prozesse (Meeder & Seifer, Phase 4)
+from routes.onboarding_routes import setup_onboarding_routes
+app.include_router(setup_onboarding_routes())
+
 # Chat
 from routes.chat_routes import setup_chat_routes
 app.include_router(setup_chat_routes(

@@ -284,7 +284,10 @@ class SkillsManager:
         # leaked legacy / un-stamped skills to every authenticated user.
         # Hide them now; the owner needs to be backfilled on disk if those
         # skills should be visible to a specific user.
-        return [s for s in entries if s.get("owner") == owner]
+        # Shared skills (`shared: true` in frontmatter) are an explicit
+        # opt-in: surfaced org-wide so foundation skills like the M&S
+        # Hausstandard reach every user without per-user duplication.
+        return [s for s in entries if s.get("owner") == owner or s.get("shared")]
 
     # ----------------------------------------------------------------------
     # CRUD — disk-backed
@@ -529,12 +532,32 @@ class SkillsManager:
             return True
         return False
 
-    def record_use(self, skill_id: str, owner: Optional[str] = None) -> None:
+    def record_use(self, skill_id: str, owner: Optional[str] = None,
+                    duration_ms: Optional[int] = None) -> None:
+        """Bumpt den Aufruf-Zaehler und optional eine simple Laufzeit-Statistik
+        (Phase-1-Telemetrie fuer den ``GET /api/skills/metrics``-Endpoint).
+
+        ``duration_ms`` ist optional, weil bestehende Aufrufstellen weiter
+        ohne Argument funktionieren; sobald ein Caller die Zahl mitschickt,
+        wird sie in eine kleine Ringablage geschrieben (letzte 50 Laufzeiten)
+        und der gleitende Durchschnitt im Sidecar mitgepflegt. Bewusst kein
+        DB-Schema — die Metriken bleiben im ``_usage.json``, damit das
+        Phase-0-Backup-Konzept unveraendert bleibt.
+        """
         usage = self._load_usage()
         key = self._usage_key(skill_id, owner)
         entry = usage.setdefault(key, {"uses": 0, "last_used": None})
         entry["uses"] = int(entry.get("uses", 0)) + 1
         entry["last_used"] = int(time.time())
+        if isinstance(duration_ms, (int, float)) and duration_ms >= 0:
+            samples = entry.get("durations_ms")
+            if not isinstance(samples, list):
+                samples = []
+            samples.append(int(duration_ms))
+            # Letzte 50 Laufzeiten zur Berechnung des gleitenden Mittels.
+            samples = samples[-50:]
+            entry["durations_ms"] = samples
+            entry["avg_duration_ms"] = int(sum(samples) / len(samples))
         self._save_usage(usage)
 
     # ----------------------------------------------------------------------

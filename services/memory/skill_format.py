@@ -331,6 +331,7 @@ class Skill:
     source: str = "learned"
     teacher_model: Optional[str] = None
     owner: Optional[str] = None
+    shared: bool = False                               # org-wide visibility opt-in
     created: str = ""                                  # ISO8601
     when_to_use: str = ""
     procedure: List[str] = field(default_factory=list)
@@ -363,6 +364,7 @@ class Skill:
         fm["source"] = self.source
         if self.teacher_model: fm["teacher_model"] = self.teacher_model
         if self.owner:         fm["owner"] = self.owner
+        if self.shared:        fm["shared"] = True
         fm["created"] = self.created or _now_iso()
         return fm
 
@@ -382,6 +384,7 @@ class Skill:
             "source": self.source,
             "teacher_model": self.teacher_model,
             "owner": self.owner,
+            "shared": bool(self.shared),
             "created": self.created,
             "when_to_use": self.when_to_use,
             "procedure": list(self.procedure),
@@ -419,6 +422,7 @@ class Skill:
             source=str(fm.get("source", "learned") or "learned"),
             teacher_model=str(fm.get("teacher_model")) if fm.get("teacher_model") else None,
             owner=str(fm.get("owner")) if fm.get("owner") else None,
+            shared=bool(fm.get("shared")) if fm.get("shared") not in (None, "") else False,
             created=str(fm.get("created") or _now_iso()),
             when_to_use=sections["when_to_use"],
             procedure=list(sections["procedure"]),

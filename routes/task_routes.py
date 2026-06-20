@@ -2,6 +2,7 @@
 
 import json
 import logging
+import re
 import secrets
 import uuid
 from datetime import datetime
@@ -1161,5 +1162,84 @@ def setup_task_routes(task_scheduler) -> APIRouter:
         except Exception as e:
             logger.error(f"parse_task failed: {e}")
             return {"success": False, "message": str(e)}
+
+    @router.post("/schedule-skill")
+    async def schedule_skill(request: Request, payload: dict):
+        """Komfort-Endpoint (Meeder & Seifer, Phase 2): plant einen Skill
+        als wiederkehrende LLM-Aufgabe ein.
+
+        Erwartete Felder:
+        - ``skill_slug``: z.B. ``"marktbeobachtung-briefing"``
+        - ``arguments``: Freitext, der nach dem Slash-Befehl angehaengt wird
+          (z.B. ``"Themenfeld: europaeische Anleihen"``)
+        - ``schedule``: ``"daily" | "weekly" | "monthly" | "cron"``
+        - ``scheduled_time``: ``"HH:MM"`` (Default 08:00) — bei weekly/monthly
+        - ``scheduled_day``: 0=Mo..6=So bei weekly, 1..31 bei monthly
+        - ``cron_expression``: bei ``schedule="cron"`` erforderlich
+        - ``name``: optional, sonst aus Skill-Slug + Argument abgeleitet
+
+        Intern wird eine ``ScheduledTask`` mit ``task_type="llm"`` und
+        Prompt ``/<skill_slug> <arguments>`` angelegt — der Agent-Loop
+        erkennt den Slash-Befehl und faehrt das Skill-Procedure durch.
+        """
+        user = _owner(request)
+        if not user:
+            raise HTTPException(401, "Authentifizierung erforderlich")
+
+        skill_slug = (payload.get("skill_slug") or "").strip().lower()
+        if not skill_slug or not re.match(r"^[a-z0-9][a-z0-9-]{0,80}$", skill_slug):
+            raise HTTPException(400, "skill_slug fehlt oder ungueltig (kebab-case erwartet)")
+
+        arguments = (payload.get("arguments") or "").strip()
+        prompt = f"/{skill_slug}" + (f" {arguments}" if arguments else "")
+
+        schedule = (payload.get("schedule") or "daily").lower()
+        if schedule not in ("daily", "weekly", "monthly", "cron"):
+            raise HTTPException(400, "schedule muss daily|weekly|monthly|cron sein")
+        scheduled_time = payload.get("scheduled_time") or "08:00"
+        scheduled_day = payload.get("scheduled_day")
+        cron_expression = payload.get("cron_expression") or None
+
+        if schedule == "cron":
+            if not cron_expression:
+                raise HTTPException(400, "cron_expression fehlt fuer schedule=cron")
+            try:
+                from croniter import croniter
+                croniter(cron_expression)
+            except Exception:
+                raise HTTPException(400, "Ungueltiger cron-Ausdruck")
+
+        name = (payload.get("name") or "").strip() or f"Skill: {skill_slug}"
+
+        next_run = compute_next_run(
+            schedule, scheduled_time, scheduled_day, None,
+            cron_expression=cron_expression,
+        )
+
+        task_id = str(uuid.uuid4())
+        db = SessionLocal()
+        try:
+            task = ScheduledTask(
+                id=task_id,
+                owner=user,
+                name=name,
+                prompt=prompt,
+                task_type="llm",
+                schedule=schedule,
+                scheduled_time=scheduled_time,
+                scheduled_day=scheduled_day,
+                cron_expression=cron_expression,
+                trigger_type="schedule",
+                next_run=next_run,
+                status="active",
+                output_target="session",
+                notifications_enabled=True,
+            )
+            db.add(task)
+            db.commit()
+            db.refresh(task)
+            return _task_to_dict(task)
+        finally:
+            db.close()
 
     return router

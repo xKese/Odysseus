@@ -91,6 +91,9 @@ let _librarySelectedIds = new Set();
 let _libraryImportMode = false;
 let _libScrollBound = false;   // infinite-scroll listener attached once
 let _libraryArchivedView = false;   // Documents tab showing archived docs?
+// Meeder & Seifer Phase 2: Freigabe-Filter "all" | "draft" | "released".
+// Default ist `all`, damit der Standard-Library-Workflow unveraendert bleibt.
+let _libraryReleaseFilter = 'all';
 
 // ---- Library animation helpers ----
 
@@ -324,6 +327,9 @@ let _libraryArchivedView = false;   // Documents tab showing archived docs?
     if (_librarySearch) params.set('search', _librarySearch);
     if (_libraryActiveLanguage) params.set('language', _libraryActiveLanguage);
     if (_libraryArchivedView) params.set('archived', 'true');
+    if (_libraryReleaseFilter && _libraryReleaseFilter !== 'all') {
+      params.set('release_status', _libraryReleaseFilter);
+    }
 
     try {
       const res = await fetch(`${API_BASE}/api/documents/library?${params}`);
@@ -365,7 +371,28 @@ let _libraryArchivedView = false;   // Documents tab showing archived docs?
     if (!wrap) return;
     // Remove only language chip buttons, keep sort/select elements
     wrap.querySelectorAll('.memory-cat-chip').forEach(c => c.remove());
+    wrap.querySelectorAll('.doclib-release-chip').forEach(c => c.remove());
     const totalAll = Object.values(_libraryLanguages).reduce((a, b) => a + b, 0);
+
+    // Meeder & Seifer Phase 2: Freigabe-Filter direkt neben den Language-Chips.
+    // Drei feste Buttons (Alle / Entwuerfe / Freigegeben), aktiver Button hat
+    // die `.active`-Klasse — gleiches Styling wie die memory-cat-chip-Klasse.
+    const releaseOptions = [
+      { id: 'all', label: 'Alle' },
+      { id: 'draft', label: 'Entwuerfe' },
+      { id: 'released', label: 'Freigegeben' },
+    ];
+    for (const opt of releaseOptions) {
+      const chip = document.createElement('button');
+      chip.className = 'memory-cat-chip doclib-release-chip' + (_libraryReleaseFilter === opt.id ? ' active' : '');
+      chip.textContent = opt.label;
+      chip.title = 'Freigabe-Filter (Meeder & Seifer)';
+      chip.addEventListener('click', () => {
+        _libraryReleaseFilter = opt.id;
+        libraryFetch(false);
+      });
+      wrap.appendChild(chip);
+    }
 
     // Hide the "all (0)" chip + lang chips entirely when there are no docs.
     if (totalAll === 0) return;
@@ -560,6 +587,22 @@ let _libraryArchivedView = false;   // Documents tab showing archived docs?
     verBadge.style.cssText = 'font-size:9px;padding:1px 6px;border-radius:8px;background:color-mix(in srgb, var(--red) 15%, transparent);border:1px solid color-mix(in srgb, var(--red) 40%, transparent);color:var(--red);flex-shrink:0;';
     verBadge.textContent = 'v' + (doc.version_count || 1);
     titleRow.appendChild(verBadge);
+    // Meeder & Seifer Phase 2: Freigabe-Status-Badge. Released = gruen,
+    // Draft = grau. Wird nur gerendert, wenn das Feld vom Backend
+    // mitgekommen ist (sonst alte UI-Aufrufer auf einer alten DB).
+    if (doc.release_status === 'released') {
+      const relBadge = document.createElement('span');
+      relBadge.style.cssText = 'font-size:9px;padding:1px 6px;border-radius:8px;background:#2E7D32;color:#fff;flex-shrink:0;';
+      relBadge.textContent = 'freigegeben';
+      relBadge.title = doc.released_by ? `Freigegeben von ${doc.released_by}` : 'Freigegeben';
+      titleRow.appendChild(relBadge);
+    } else if (doc.release_status === 'draft') {
+      const draftBadge = document.createElement('span');
+      draftBadge.style.cssText = 'font-size:9px;padding:1px 6px;border-radius:8px;background:#666;color:#fff;flex-shrink:0;opacity:0.85;';
+      draftBadge.textContent = 'Entwurf';
+      draftBadge.title = 'Noch nicht freigegeben';
+      titleRow.appendChild(draftBadge);
+    }
     // Chevron pushed to the right end of the title row — collapsed
     // shows nothing, expanded reveals a downward chevron so the user
     // sees the card is open and can tap to close it.
@@ -744,6 +787,42 @@ let _libraryArchivedView = false;   // Documents tab showing archived docs?
       } catch { if (uiModule) uiModule.showError('Failed to ' + (toArchived ? 'archive' : 'restore')); }
     });
     dropdown.appendChild(archiveItem);
+
+    // Meeder & Seifer Phase 2: Freigabe/Zurueck-auf-Entwurf-Aktion.
+    // Backend prueft die Rolle (Admin oder `vermoegensverwalter`) und
+    // antwortet ggf. mit 403; die UI zeigt die Aktion unbedingt allen
+    // Nutzern und uebersetzt den 403 in eine erklaerende Toast-Meldung.
+    const _releaseIco = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    const isReleased = doc.release_status === 'released';
+    const releaseItem = document.createElement('button');
+    releaseItem.className = 'dropdown-item-compact';
+    releaseItem.style.cssText = 'background:none;border:none;width:100%;';
+    releaseItem.innerHTML = _di(_releaseIco) + `<span>${isReleased ? 'Freigabe zuruecknehmen' : 'Freigeben'}</span>`;
+    releaseItem.title = isReleased
+      ? 'Status auf Entwurf zuruecksetzen'
+      : 'Freigeben (Admin oder Rolle Vermoegensverwalter)';
+    releaseItem.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      hideCardDropdown();
+      try {
+        const target = !isReleased;
+        const res = await fetch(`${API_BASE}/api/document/${doc.id}/release?released=${target}`, { method: 'POST', credentials: 'same-origin' });
+        if (res.status === 403) {
+          if (uiModule) uiModule.showError('Freigabe nur durch Admin oder Vermoegensverwalter');
+          return;
+        }
+        if (!res.ok) throw new Error('failed');
+        const data = await res.json();
+        doc.release_status = data.release_status;
+        doc.released_by = data.released_by;
+        doc.released_at = data.released_at;
+        libraryRenderGrid();
+        if (uiModule) uiModule.showToast(target ? 'Freigegeben' : 'Auf Entwurf zurueckgesetzt');
+      } catch {
+        if (uiModule) uiModule.showError('Freigabe-Aktion fehlgeschlagen');
+      }
+    });
+    dropdown.appendChild(releaseItem);
 
     // Delete
     const _deleteIco = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';

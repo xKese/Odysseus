@@ -24,10 +24,21 @@ requirements.lock
 secrets.env.*
 !secrets.env.example
 
-# Data — all user data stays local
-data/
+# Data — all user data stays local. Patterns are scoped to data/* (not the
+# whole data/) so the Phase-1-Saatgut (Skills, Vorlagen, Baseline-CSV)
+# kann mit dem Repo ausgeliefert werden. Mandantendaten unter
+# data/uploads/, data/chroma/, data/huggingface/ und Co. bleiben weiterhin
+# lokal.
+data/*
 !services/hwfit/data/
 !services/hwfit/data/hf_models.json
+# Phase-1-Saatgut Meeder & Seifer:
+!data/skills/
+data/skills/_usage.json
+!data/templates/
+!data/metrics/
+# Phase-4-Saatgut Meeder & Seifer:
+!data/standardanfragen/
 logs/
 *.log
 *.db
