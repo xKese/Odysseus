@@ -537,10 +537,23 @@
           <h3 style="margin:0;">Sitzungen</h3>
           <button id="meetings-new-btn" class="primary-btn">+ Neue Sitzung</button>
         </div>
+        <div id="meetings-type-filter" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
         <div id="meetings-list">Lade…</div>
         <div id="meetings-new-form" class="hidden" style="margin-top:12px;padding:10px;border:1px solid var(--border);border-radius:8px;">
           <h4 style="margin:0 0 8px 0;">Neue Sitzung anlegen</h4>
           <form id="meetings-create-form" style="display:flex;flex-direction:column;gap:8px;">
+            <label>Sitzungstyp<br>
+              <select id="meetings-type" style="padding:6px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;">
+                <option value="anlageausschuss">Anlageausschuss</option>
+                <option value="mandant">Mandantentermin</option>
+                <option value="extern">Extern</option>
+              </select>
+            </label>
+            <div id="meetings-mandant-wrap" style="display:none;">
+              <label>Mandantenname (Pflicht bei Mandantentermin)<br>
+                <input type="text" id="meetings-mandant" placeholder="Mustermann GmbH" style="width:100%;padding:6px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;">
+              </label>
+            </div>
             <label>Titel<br><input type="text" id="meetings-title" required style="width:100%;padding:6px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;"></label>
             <label>Datum &amp; Uhrzeit<br><input type="datetime-local" id="meetings-date" required style="padding:6px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;"></label>
             <label>Ort<br><input type="text" id="meetings-location" style="width:100%;padding:6px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;"></label>
@@ -552,6 +565,67 @@
           </form>
         </div>
         <div id="meetings-detail" class="hidden" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Standardanfragen-Panel (Meeder & Seifer, Phase 4) -->
+  <div id="standardanfragen-modal" class="modal hidden">
+    <div class="modal-content admin-modal-content" role="dialog" aria-label="Standardanfragen" style="background:var(--bg);max-width:980px;width:94vw;max-height:90vh;display:flex;flex-direction:column;">
+      <div class="modal-header">
+        <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Standardanfragen</h4>
+        <button class="close-btn" id="close-standardanfragen-modal" aria-label="Schliessen">&#x2716;</button>
+      </div>
+      <div style="overflow:auto;padding:14px;flex:1;display:grid;grid-template-columns:280px 1fr;gap:14px;">
+        <div>
+          <h3 style="margin:0 0 8px 0;">Themen</h3>
+          <div id="standardanfragen-list">Lade…</div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:14px 0;">
+          <h3 style="margin:0 0 8px 0;">Frage testen</h3>
+          <textarea id="standardanfragen-match-input" rows="3" placeholder="z.B. Wie kann ich mein Mandat kuendigen?" style="width:100%;padding:6px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;"></textarea>
+          <button id="standardanfragen-match-btn" class="primary-btn" style="margin-top:6px;width:100%;">Match suchen</button>
+          <div id="standardanfragen-match-result" style="margin-top:8px;font-size:0.9em;"></div>
+        </div>
+        <div id="standardanfragen-detail" style="border-left:1px solid var(--border);padding-left:14px;">
+          <div style="opacity:0.6;">Thema links waehlen, um Stichworte und Template anzuzeigen.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboarding-Panel (Meeder & Seifer, Phase 4) -->
+  <div id="onboarding-modal" class="modal hidden">
+    <div class="modal-content admin-modal-content" role="dialog" aria-label="Onboarding" style="background:var(--bg);max-width:1000px;width:94vw;max-height:90vh;display:flex;flex-direction:column;">
+      <div class="modal-header">
+        <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>Onboarding</h4>
+        <button class="close-btn" id="close-onboarding-modal" aria-label="Schliessen">&#x2716;</button>
+      </div>
+      <div style="overflow:auto;padding:14px;flex:1;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
+          <h3 style="margin:0;">Laufende Onboardings</h3>
+          <button id="onboarding-new-btn" class="primary-btn">+ Neumandat</button>
+        </div>
+        <div id="onboarding-list">Lade…</div>
+        <div id="onboarding-new-form" class="hidden" style="margin-top:12px;padding:10px;border:1px solid var(--border);border-radius:8px;">
+          <h4 style="margin:0 0 8px 0;">Neumandat anlegen</h4>
+          <form id="onboarding-create-form" style="display:flex;flex-direction:column;gap:8px;">
+            <label>Mandantenname<br><input type="text" id="onboarding-mandant" required style="width:100%;padding:6px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;"></label>
+            <label>Onboarding-Typ<br>
+              <select id="onboarding-type" style="padding:6px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;">
+                <option value="vermoegensverwaltung">Vermoegensverwaltung</option>
+                <option value="family_office">Family Office</option>
+                <option value="beratung">Beratung</option>
+              </select>
+            </label>
+            <label>Zieldatum (optional)<br><input type="date" id="onboarding-target" style="padding:6px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;"></label>
+            <label>Notizen<br><textarea id="onboarding-notes" rows="2" style="width:100%;padding:6px;background:var(--input-bg,var(--panel));color:var(--fg);border:1px solid var(--border);border-radius:6px;"></textarea></label>
+            <div style="display:flex;gap:6px;">
+              <button type="submit" class="primary-btn">Anlegen</button>
+              <button type="button" id="onboarding-create-cancel" class="secondary-btn">Abbrechen</button>
+            </div>
+          </form>
+        </div>
+        <div id="onboarding-detail" class="hidden" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;"></div>
       </div>
     </div>
   </div>
@@ -786,6 +860,8 @@
     <button class="icon-rail-btn" id="rail-knowledge" title="Hauswissen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M8 7h8M8 11h6"/></svg></button>
     <button class="icon-rail-btn" id="rail-portfolio" title="Portfolios"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 4 4 6-6"/></svg></button>
     <button class="icon-rail-btn" id="rail-meetings" title="Anlageausschuss"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></button>
+    <button class="icon-rail-btn" id="rail-faq" title="Standardanfragen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></button>
+    <button class="icon-rail-btn" id="rail-onboarding" title="Onboarding"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg></button>
     <button class="icon-rail-btn" id="rail-email" title="Email"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></button>
     <button class="icon-rail-btn" id="rail-gallery" title="Gallery"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></button>
     <button class="icon-rail-btn" id="rail-archive" title="Library"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h6M9 11h4"/></svg></button>
@@ -2568,6 +2644,8 @@
 <script src="/static/js/knowledge/panel.js"></script>
 <script src="/static/js/portfolio/panel.js"></script>
 <script src="/static/js/meetings/panel.js"></script>
+<script src="/static/js/standardanfragen/panel.js"></script>
+<script src="/static/js/onboarding/panel.js"></script>
 <script type="module" src="/static/app.js"></script>  <!-- app.js must be LAST -->
 <script type="module" src="/static/js/init.js"></script>
 <script type="module" src="/static/js/a11y.js"></script>

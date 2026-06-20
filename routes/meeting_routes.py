@@ -34,6 +34,7 @@ from src.auth_helpers import get_current_user
 logger = logging.getLogger(__name__)
 
 _ALLOWED_STATUS = ("planned", "held", "protocol", "approved")
+_ALLOWED_TYPES = ("anlageausschuss", "mandant", "extern")
 
 
 def _parse_dt(raw: Optional[str]) -> Optional[datetime]:
@@ -68,6 +69,9 @@ def _meeting_to_dict(m: MeetingMinutes, attached: Optional[List[Dict]] = None) -
         "decision_documents": decisions,
         "attached_documents": attached or [],
         "next_meeting_date": m.next_meeting_date.isoformat() + "Z" if m.next_meeting_date else None,
+        "meeting_type": getattr(m, "meeting_type", None) or "anlageausschuss",
+        "mandant_name": getattr(m, "mandant_name", None),
+        "preparation_document_id": getattr(m, "preparation_document_id", None),
         "created_at": m.created_at.isoformat() + "Z" if m.created_at else None,
         "updated_at": m.updated_at.isoformat() + "Z" if m.updated_at else None,
     }
@@ -91,17 +95,18 @@ def setup_meeting_routes():
     # ------------------------------------------------------------------
 
     @router.get("")
-    def list_meetings(request: Request):
+    def list_meetings(request: Request, type: Optional[str] = None):
         user = get_current_user(request)
         if not user:
             raise HTTPException(401, "Authentifizierung erforderlich")
         with SessionLocal() as db:
-            rows = (
+            q = (
                 db.query(MeetingMinutes)
                 .filter(MeetingMinutes.owner == user)
-                .order_by(MeetingMinutes.meeting_date.desc())
-                .all()
             )
+            if type and type.lower() in _ALLOWED_TYPES:
+                q = q.filter(MeetingMinutes.meeting_type == type.lower())
+            rows = q.order_by(MeetingMinutes.meeting_date.desc()).all()
             return {"meetings": [_meeting_to_dict(m) for m in rows]}
 
     @router.get("/upcoming")
@@ -137,6 +142,12 @@ def setup_meeting_routes():
         status = (payload.get("status") or "planned").lower()
         if status not in _ALLOWED_STATUS:
             raise HTTPException(400, f"status muss einer von {_ALLOWED_STATUS} sein")
+        meeting_type = (payload.get("meeting_type") or "anlageausschuss").lower()
+        if meeting_type not in _ALLOWED_TYPES:
+            raise HTTPException(400, f"meeting_type muss einer von {_ALLOWED_TYPES} sein")
+        mandant_name = (payload.get("mandant_name") or "").strip() or None
+        if meeting_type == "mandant" and not mandant_name:
+            raise HTTPException(400, "Bei meeting_type=mandant ist mandant_name Pflicht")
 
         with SessionLocal() as db:
             m = MeetingMinutes(
@@ -149,6 +160,8 @@ def setup_meeting_routes():
                 status=status,
                 decision_documents_json=json.dumps([]),
                 next_meeting_date=_parse_dt(payload.get("next_meeting_date")),
+                meeting_type=meeting_type,
+                mandant_name=mandant_name,
             )
             db.add(m)
             db.commit()
@@ -203,8 +216,16 @@ def setup_meeting_routes():
                     m.status = st
             if "minute_document_id" in payload:
                 m.minute_document_id = payload["minute_document_id"] or None
+            if "preparation_document_id" in payload:
+                m.preparation_document_id = payload["preparation_document_id"] or None
             if "next_meeting_date" in payload:
                 m.next_meeting_date = _parse_dt(payload["next_meeting_date"])
+            if "meeting_type" in payload:
+                mt = (payload["meeting_type"] or "").lower()
+                if mt in _ALLOWED_TYPES:
+                    m.meeting_type = mt
+            if "mandant_name" in payload:
+                m.mandant_name = (payload["mandant_name"] or "").strip() or None
             db.commit()
             db.refresh(m)
             return _meeting_to_dict(m)
@@ -250,6 +271,30 @@ def setup_meeting_routes():
                 if doc_id not in cur:
                     cur.append(doc_id)
                 m.decision_documents_json = json.dumps(cur, ensure_ascii=False)
+            db.commit()
+            db.refresh(m)
+            return _meeting_to_dict(m)
+
+    @router.post("/{meeting_id}/prepare")
+    def attach_preparation(request: Request, meeting_id: str, payload: Dict[str, Any]):
+        """Phase 4 (Meeder & Seifer): Briefing-Mappe an die Sitzung als
+        Vorbereitungs-Dokument haengen. Setzt ``preparation_document_id``
+        und beruehrt den Status nicht — der bleibt im Mitarbeiter-Workflow.
+        """
+        user = get_current_user(request)
+        doc_id = (payload.get("document_id") or "").strip()
+        if not doc_id:
+            raise HTTPException(400, "document_id fehlt")
+        with SessionLocal() as db:
+            m = db.query(MeetingMinutes).filter(MeetingMinutes.id == meeting_id).first()
+            if not m or m.owner != user:
+                raise HTTPException(404, "Sitzung nicht gefunden")
+            doc = db.query(Document).filter(Document.id == doc_id).first()
+            if not doc:
+                raise HTTPException(404, "Dokument nicht gefunden")
+            if (doc.owner or "") != (user or ""):
+                raise HTTPException(403, "Dokument gehoert nicht dem aktuellen Nutzer")
+            m.preparation_document_id = doc_id
             db.commit()
             db.refresh(m)
             return _meeting_to_dict(m)

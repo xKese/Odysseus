@@ -8,6 +8,21 @@
   const $ = (id) => document.getElementById(id);
   let meetings = [];
   let currentMeeting = null;
+  // Phase 4: Filter-Tab fuer meeting_type. 'all' zeigt alle Typen.
+  let currentTypeFilter = 'all';
+
+  const TYPE_LABELS = {
+    anlageausschuss: 'Anlageausschuss',
+    mandant: 'Mandantentermin',
+    extern: 'Extern',
+  };
+
+  function typeBadge(type) {
+    const colors = { anlageausschuss: '#1F3864', mandant: '#2E7D32', extern: '#666' };
+    const lbl = TYPE_LABELS[type] || type || '—';
+    const col = colors[type] || '#999';
+    return `<span style="background:${col};color:#fff;padding:2px 8px;border-radius:10px;font-size:0.75em;">${escapeHtml(lbl)}</span>`;
+  }
 
   async function fetchJson(url, options = {}) {
     const res = await fetch(url, {
@@ -60,26 +75,57 @@
     return `<span style="background:${m.col};color:#fff;padding:2px 8px;border-radius:10px;font-size:0.8em;">${escapeHtml(m.lbl)}</span>`;
   }
 
+  function renderTypeFilters() {
+    const wrap = $('meetings-type-filter');
+    if (!wrap) return;
+    const opts = [
+      { id: 'all', lbl: 'Alle' },
+      { id: 'anlageausschuss', lbl: 'Anlageausschuss' },
+      { id: 'mandant', lbl: 'Mandantentermin' },
+      { id: 'extern', lbl: 'Extern' },
+    ];
+    wrap.innerHTML = opts.map((o) => `
+      <button data-type="${o.id}" class="meetings-type-chip" style="padding:4px 10px;border:1px solid var(--border);border-radius:14px;background:${currentTypeFilter === o.id ? 'var(--accent-primary,#1F3864)' : 'var(--panel)'};color:${currentTypeFilter === o.id ? '#fff' : 'var(--fg)'};cursor:pointer;font-size:0.85em;">${escapeHtml(o.lbl)}</button>
+    `).join('');
+    wrap.querySelectorAll('.meetings-type-chip').forEach((b) => {
+      b.addEventListener('click', () => {
+        currentTypeFilter = b.dataset.type;
+        renderTypeFilters();
+        loadMeetings();
+      });
+    });
+  }
+
   async function loadMeetings() {
+    renderTypeFilters();
     const target = $('meetings-list');
     target.innerHTML = 'Lade…';
     try {
-      const data = await fetchJson(API);
+      const url = currentTypeFilter && currentTypeFilter !== 'all'
+        ? `${API}?type=${encodeURIComponent(currentTypeFilter)}`
+        : API;
+      const data = await fetchJson(url);
       meetings = data.meetings || [];
       if (!meetings.length) {
-        target.innerHTML = '<div style="opacity:0.7;">Noch keine Sitzungen — oben rechts auf "+ Neue Sitzung" klicken.</div>';
+        target.innerHTML = '<div style="opacity:0.7;">Noch keine Sitzungen in dieser Auswahl — oben rechts auf "+ Neue Sitzung" klicken.</div>';
         return;
       }
-      target.innerHTML = meetings.map((m) => `
-        <div class="meeting-card" data-meeting-id="${escapeHtml(m.id)}" style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer;">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;">
-            <strong>${escapeHtml(m.title)}</strong>
-            ${statusBadge(m.status)}
+      target.innerHTML = meetings.map((m) => {
+        const mandantLine = m.meeting_type === 'mandant' && m.mandant_name
+          ? `<div style="opacity:0.7;font-size:0.85em;margin-top:2px;">Mandant: ${escapeHtml(m.mandant_name)}</div>`
+          : '';
+        return `
+          <div class="meeting-card" data-meeting-id="${escapeHtml(m.id)}" style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer;">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;">
+              <strong>${escapeHtml(m.title)}</strong>
+              <div style="display:flex;gap:4px;">${typeBadge(m.meeting_type)} ${statusBadge(m.status)}</div>
+            </div>
+            <div style="opacity:0.7;font-size:0.9em;margin-top:4px;">${fmtDateTime(m.meeting_date)} · ${escapeHtml(m.location || '')}</div>
+            ${mandantLine}
+            <div style="opacity:0.55;font-size:0.85em;margin-top:2px;">${(m.attendees || []).length} Teilnehmer</div>
           </div>
-          <div style="opacity:0.7;font-size:0.9em;margin-top:4px;">${fmtDateTime(m.meeting_date)} · ${escapeHtml(m.location || '')}</div>
-          <div style="opacity:0.55;font-size:0.85em;margin-top:2px;">${(m.attendees || []).length} Teilnehmer</div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
       target.querySelectorAll('.meeting-card').forEach((el) => {
         el.addEventListener('click', () => openMeeting(el.dataset.meetingId));
       });
@@ -209,23 +255,41 @@
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
+    const meeting_type = ($('meetings-type') && $('meetings-type').value) || 'anlageausschuss';
+    const mandant_name = ($('meetings-mandant') && $('meetings-mandant').value || '').trim();
     if (!title || !dateRaw) return;
+    if (meeting_type === 'mandant' && !mandant_name) {
+      alert('Bei Mandantentermin ist der Mandantenname Pflicht.');
+      return;
+    }
     try {
       await postJson(API, {
         title,
         meeting_date: dateRaw + (dateRaw.length === 16 ? ':00' : ''),
         location,
         attendees,
+        meeting_type,
+        mandant_name: mandant_name || null,
       });
       $('meetings-title').value = '';
       $('meetings-date').value = '';
       $('meetings-location').value = '';
       $('meetings-attendees').value = '';
+      if ($('meetings-mandant')) $('meetings-mandant').value = '';
+      if ($('meetings-type')) $('meetings-type').value = 'anlageausschuss';
+      toggleMandantField();
       $('meetings-new-form').classList.add('hidden');
       await loadMeetings();
     } catch (e) {
       alert(`Fehler: ${e.message}`);
     }
+  }
+
+  function toggleMandantField() {
+    const select = $('meetings-type');
+    const wrap = $('meetings-mandant-wrap');
+    if (!select || !wrap) return;
+    wrap.style.display = select.value === 'mandant' ? '' : 'none';
   }
 
   async function openPanel() {
@@ -248,6 +312,9 @@
     if (cancelBtn) cancelBtn.addEventListener('click', () => $('meetings-new-form').classList.add('hidden'));
     const form = $('meetings-create-form');
     if (form) form.addEventListener('submit', createMeeting);
+    const typeSel = $('meetings-type');
+    if (typeSel) typeSel.addEventListener('change', toggleMandantField);
+    toggleMandantField();
   }
 
   if (document.readyState === 'loading') {

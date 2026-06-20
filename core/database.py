@@ -782,6 +782,52 @@ def _migrate_add_document_archived_column():
             pass
 
 
+def _migrate_add_meeting_type_columns():
+    """Phase 4 (Meeder & Seifer): erweitere ``meeting_minutes`` um
+    ``meeting_type``, ``mandant_name`` und ``preparation_document_id``.
+    Idempotent, guarded — bestehende Anlageausschuss-Sitzungen erhalten
+    den Default-Typ ``anlageausschuss`` und bleiben sichtbar."""
+    import sqlite3
+    db_path = DATABASE_URL.replace("sqlite:///", "")
+    if not os.path.exists(db_path):
+        return
+    conn = None
+    try:
+        conn = sqlite3.connect(db_path)
+        # Tabelle wird per create_all() angelegt, aber bei Bestandsdatenbanken
+        # koennte sie schon ohne die neuen Spalten existieren.
+        existing_tables = [r[0] for r in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='meeting_minutes'"
+        )]
+        if "meeting_minutes" not in existing_tables:
+            return
+        cols = [r[1] for r in conn.execute("PRAGMA table_info(meeting_minutes)").fetchall()]
+        changed = False
+        if "meeting_type" not in cols:
+            conn.execute(
+                "ALTER TABLE meeting_minutes ADD COLUMN meeting_type TEXT DEFAULT 'anlageausschuss'"
+            )
+            changed = True
+        if "mandant_name" not in cols:
+            conn.execute("ALTER TABLE meeting_minutes ADD COLUMN mandant_name TEXT")
+            changed = True
+        if "preparation_document_id" not in cols:
+            conn.execute("ALTER TABLE meeting_minutes ADD COLUMN preparation_document_id TEXT")
+            changed = True
+        if changed:
+            conn.commit()
+            logging.getLogger(__name__).info(
+                "Migrated: added Phase-4 meeting-type columns to meeting_minutes"
+            )
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"meeting_minutes phase4 migration failed: {e}")
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
 def _migrate_add_document_release_status():
     """Add Phase-1-Freigabe-Spalten (``release_status``, ``released_by``,
     ``released_at``) zu ``documents``. Guarded + idempotent."""
@@ -1923,7 +1969,14 @@ class Position(Base):
 
 
 class MeetingMinutes(TimestampMixin, Base):
-    """Anlageausschuss- oder vergleichbare Sitzung mit verbundenen Dokumenten."""
+    """Anlageausschuss-, Mandanten- oder vergleichbare Sitzung mit verbundenen Dokumenten.
+
+    Phase 4 (Meeder & Seifer) hat die Tabelle um ``meeting_type``, ``mandant_name``
+    und ``preparation_document_id`` erweitert, damit der Mandanten-Termin
+    (Briefing-Mappe je Mandant) das gleiche Modell wie der Anlageausschuss
+    nutzt. Bestandsdatensaetze ohne Typ-Feld werden als ``anlageausschuss``
+    interpretiert (Migration setzt den Default).
+    """
     __tablename__ = "meeting_minutes"
 
     id                 = Column(String, primary_key=True, index=True)
@@ -1936,6 +1989,37 @@ class MeetingMinutes(TimestampMixin, Base):
     minute_document_id = Column(String, ForeignKey("documents.id", ondelete="SET NULL"), nullable=True)
     decision_documents_json = Column(Text, nullable=True)   # JSON list of doc-ids
     next_meeting_date  = Column(DateTime, nullable=True)
+    # Phase 4: Mandantentermine + Briefing-Mappen-Verknuepfung
+    meeting_type       = Column(String, default="anlageausschuss", index=True)
+    mandant_name       = Column(String, nullable=True, index=True)
+    preparation_document_id = Column(String, ForeignKey("documents.id", ondelete="SET NULL"), nullable=True)
+
+
+# --------------------------------------------------------------------------
+# Phase 4 (Meeder & Seifer): Onboarding-Prozesse fuer Neumandate
+# --------------------------------------------------------------------------
+#
+# Strukturierter Status-Tracker je Mandant: Checkliste, Willkommens-Document,
+# Zieldatum. Bewusst schlank — Beleg-Dokumente leben weiterhin als ``Document``
+# mit ``release_status``; hier nur die Verknuepfungen + Status der einzelnen
+# Checklist-Schritte.
+
+
+class OnboardingProcess(TimestampMixin, Base):
+    """Onboarding eines Neumandats — Checkliste + Begleitdokumente."""
+    __tablename__ = "onboarding_processes"
+
+    id                       = Column(String, primary_key=True, index=True)
+    owner                    = Column(String, nullable=True, index=True)
+    mandant_name             = Column(String, nullable=False, index=True)
+    onboarding_type          = Column(String, default="vermoegensverwaltung")  # vermoegensverwaltung | family_office | beratung
+    status                   = Column(String, default="started")  # started | docs_pending | review | completed | abandoned
+    started_at               = Column(DateTime, default=utcnow_naive, nullable=False)
+    target_completion_date   = Column(DateTime, nullable=True)
+    completed_at             = Column(DateTime, nullable=True)
+    checklist_json           = Column(Text, nullable=True)   # JSON list of {step, status, evidence_document_id?}
+    welcome_document_id      = Column(String, ForeignKey("documents.id", ondelete="SET NULL"), nullable=True)
+    notes                    = Column(Text, nullable=True)
 
 
 
@@ -2031,6 +2115,7 @@ def init_db():
     _migrate_add_owner_column()
     _migrate_add_document_archived_column()
     _migrate_add_document_release_status()
+    _migrate_add_meeting_type_columns()
     _migrate_add_last_message_at_column()
     _migrate_add_folder_column()
     _migrate_add_token_columns()
