@@ -7,8 +7,9 @@ tags: [alternatives, private-equity, immobilien, beteiligung, private-debt, pitc
 status: published
 confidence: 0.85
 source: imported
+owner: kese
 shared: true
-created: 2026-06-19T00:00:00Z
+created: "2026-06-19T00:00:00Z"
 ---
 
 ## When to Use
@@ -50,8 +51,6 @@ Triggere diesen Skill, wenn eine illiquide oder alternative Investment-Opportuni
 - Output ist auf Deutsch, professionell-nuechtern, ohne emojis ausser dem Warnhinweis fuer fehlende/unbelegte Werte; Document liegt als `release_status=draft` vor.
 - Recherchemodus ist geklaert (bei fehlender Angabe wurde nachgefragt) und im Kopf des Outputs vermerkt; bei Tiefenanalyse sind Deep-Research-Befunde als solche markiert, mit Quelle und Stichtag belegt und vom Pitchdeck-Inhalt getrennt.
 
-## Detail: Asset-Klassen-Klassifikation
-
 Ordne die Opportunitaet zuerst zu — sie bestimmt das anzuwendende Kennzahlen-Modul:
 
 | Indiz im Pitchdeck | Asset-Klasse |
@@ -63,8 +62,6 @@ Ordne die Opportunitaet zuerst zu — sie bestimmt das anzuwendende Kennzahlen-M
 | Konzession, regulierter/contractierter Cashflow, Versorger/Transport/Digital | Infrastruktur |
 
 Allgemeine Pflichtfelder (alle Klassen): Bezeichnung der Opportunitaet, Anbieter/GP/Initiator, Vehikel und Rechtsform plus Domizil, Asset-Klasse, Strategie, Zielvolumen, Mindestzeichnung, Anleger-Einstufung (semiprofessionell/professionell), Laufzeit/Term und Lock-up, regulatorischer Status (AIF? KVG? Verwahrstelle?), liegt ein gebilligter Prospekt vor?, Stichtag der Unterlagen.
-
-## Detail: Modul Private Equity / Venture-Fonds
 
 | Kennzahl | Hinweis |
 |---|---|
@@ -78,8 +75,6 @@ Allgemeine Pflichtfelder (alle Klassen): Bezeichnung der Opportunitaet, Anbieter
 | Investitionszeitraum | und Gesamt-Fund-Term plus Verlaengerungsoptionen |
 | Diversifikation | Zielanzahl Portfoliounternehmen, Sektor-/Regionenfokus |
 | Co-Investment-Rechte | falls fuer LPs vorgesehen |
-
-## Detail: Modul Immobilien (direkt und Fonds)
 
 | Kennzahl | Hinweis |
 |---|---|
@@ -97,8 +92,6 @@ Allgemeine Pflichtfelder (alle Klassen): Bezeichnung der Opportunitaet, Anbieter
 | Wertgutachten | Datum, Gutachter, unabhaengig oder Anbieter-intern? |
 | (bei Fonds zusaetzlich) | Anzahl Objekte, Diversifikation, KVG/Verwahrstelle, Ausschuettungsprognose |
 
-## Detail: Modul direkte Unternehmensbeteiligung
-
 | Kennzahl | Hinweis |
 |---|---|
 | Bewertung | Pre- und Post-Money, Bewertungsmethode |
@@ -111,8 +104,6 @@ Allgemeine Pflichtfelder (alle Klassen): Bezeichnung der Opportunitaet, Anbieter
 | Governance | Board-Sitz, Beirat, Kontrollrechte |
 | Mittelverwendung | wofuer wird das frische Kapital genutzt? |
 | Exit-Optionen | Strategie und Zeithorizont, bisherige Exits des Initiators |
-
-## Detail: Modul Private Debt und Infrastruktur
 
 **Private Debt**
 
@@ -138,8 +129,6 @@ Allgemeine Pflichtfelder (alle Klassen): Bezeichnung der Opportunitaet, Anbieter
 | Leverage | Projekt-/Fondsebene |
 | ESG / Genehmigungen | offene behoerdliche Auflagen |
 
-## Detail: Ausfuehrlichkeitsstufen
-
 ### Stufe 1 — Kurzbewertung (Anlageausschuss-Vorfilter)
 
 Schnelle Einordnung, ob sich eine vertiefte Pruefung lohnt. Enthaelt: Bezeichnung, Anbieter/GP, Asset-Klasse, Strategie, Zielvolumen, Mindestzeichnung, Laufzeit/Lock-up; die wichtigsten klassenspezifischen Kerndaten; die drei Bloecke Charakteristiken/Chancen/Risiken (je 4-5 Stichpunkte); die Top-3 Due-Diligence-Luecken; eine Ampel-Einschaetzung der Mandatspassung (passt / teilweise / passt nicht) OHNE Invest-Empfehlung.
@@ -152,8 +141,6 @@ Vollstaendige Pruefung fuer den Anlageausschuss. Enthaelt alles aus Stufe 1, plu
 
 Nur innerhalb der GLEICHEN Asset-Klasse sinnvoll (ein PE-Fonds und eine Direktimmobilie sind nicht 1:1 vergleichbar). Aufbau: Kennzahlen in Zeilen, Opportunitaeten in Spalten. Nach der Tabelle fuer jede Opportunitaet die drei Bloecke anhaengen. Bei DOCX-Output besten Wert je Zeile fett markieren (bei Gebuehren/Lock-up niedriger = besser, bei Track-Record-Renditen hoeher = besser), fehlende Werte mit `(nicht ausgewiesen)`. Wenn der Nutzer Klassen mischen will: explizit darauf hinweisen, dass nur qualitativ und nicht kennzahlenbasiert verglichen werden kann.
 
-## Detail: Due-Diligence-Standard-Checklisten (was anzufordern ist)
-
 **Private Equity / Venture-Fonds**: Limited Partnership Agreement (LPA) bzw. Gesellschaftsvertrag, Private Placement Memorandum, vollstaendige Track-Record-Tabelle aller Vorgaengerfonds (nicht nur Highlights), testierte Fondsabschluesse, Gebuehren-/Kostenuebersicht (LPA-Auszug), GP-Commitment-Nachweis, Referenzen anderer LPs, Side-Letter-Praxis.
 
 **Immobilien**: unabhaengiges Wertgutachten, Mietvertraege/Mieterliste, technisches Gutachten (CapEx/Zustand), Grundbuchauszug, Finanzierungsvertrag/Term Sheet, Standort-/Marktanalyse, Business-Plan mit Annahmen, Versicherungsnachweise.
@@ -161,8 +148,6 @@ Nur innerhalb der GLEICHEN Asset-Klasse sinnvoll (ein PE-Fonds und eine Direktim
 **Direktbeteiligung**: testierte Jahresabschluesse (3 Jahre), Cap Table, Gesellschaftervertrag/Beteiligungsvertrag, Beteiligungs-/Anteilskaufvertrag-Entwurf, Management-Lebenslaeufe, Kunden-/Auftragspipeline, rechtliche und steuerliche Due-Diligence-Berichte, Wettbewerbsanalyse.
 
 **Private Debt / Infrastruktur**: Kreditvertrag/Term Sheet, Sicherheitendokumentation, Covenants-Definition, Modell mit Ausfall-/Recovery-Annahmen, Konzessions-/Abnahmevertraege (Infra), Genehmigungen/Regulierungsbescheide, technisches Gutachten, ESG-Bewertung.
-
-## Detail: DOCX-Output-Struktur
 
 Falls Word-Dokument gewuenscht, verwende `manage_documents action=create` mit `release_status=draft` und folge dieser Gliederung:
 
@@ -179,8 +164,6 @@ Fusszeile: Disclaimer aus Hausstandard
 ```
 
 Hinweis "Entwurf — fuer Anlageausschuss, vor Entscheidung pruefen" am Anfang. Farbschema und Schriftarten gemaess Skill `m-und-s-hausstandard`.
-
-## Detail: Beispiel-Workflow
 
 Ein GP sendet ein Pitchdeck zu einem Buyout-Fonds (Vintage 2026, Target 500 Mio. EUR):
 

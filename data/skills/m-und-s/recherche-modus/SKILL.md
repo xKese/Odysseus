@@ -7,8 +7,9 @@ tags: [recherche, deep-research, modus, analyse, m-und-s]
 status: published
 confidence: 0.9
 source: imported
+owner: kese
 shared: true
-created: 2026-06-19T00:00:00Z
+created: "2026-06-19T00:00:00Z"
 ---
 
 ## When to Use
@@ -35,8 +36,6 @@ Dieser Skill ist die gemeinsame Definition des Recherchemodus. Er wird von den A
 - Der Recherchemodus wurde geklaert (bei fehlender Angabe wurde nachgefragt) und im Output vermerkt.
 - Im Schnellmodus wurde kein Deep-Research-Job gestartet.
 - Im Tiefenmodus sind Deep-Research-Befunde als solche markiert, mit Quelle und Stichtag belegt und von den Upload-Daten getrennt.
-
-## Detail: Die zwei Modi
 
 ### Modus A — Schnellanalyse (ohne Deep Research)
 
