@@ -7,8 +7,9 @@ tags: [termin, mandantentermin, vorbereitung, briefing, m-und-s]
 status: published
 confidence: 0.85
 source: imported
+owner: kese
 shared: true
-created: 2026-06-19T00:00:00Z
+created: "2026-06-19T00:00:00Z"
 ---
 
 ## When to Use
@@ -17,24 +18,24 @@ Triggere diesen Skill, wenn ein Mandantengespraech oder Termin vorbereitet werde
 
 ## Procedure
 
-1. Klaere den Termin: Mandantenname, Datum/Uhrzeit, Ort, Anlass. Wenn die Sitzung noch nicht angelegt ist, lege sie an via `app_api action=call method=POST path=/api/meetings body={"title": "Termin <Mandantenname> <TT.MM.JJJJ>", "meeting_date": "YYYY-MM-DDTHH:MM:00", "location": "...", "attendees": [...], "meeting_type": "mandant", "mandant_name": "<Mandantenname>"}`.
+1. Klaere den Termin: Mandantenname, Datum/Uhrzeit, Ort, Anlass. Klaere zusaetzlich den Recherchemodus (siehe Skill `recherche-modus`): Schnellanalyse (nur interne Mandantenakte) oder Tiefenanalyse (zusaetzlich `trigger_research` fuer die aktuelle Markt-/Themenlage und News zu mandantenrelevanten Titeln). Wenn der Nutzer den Modus nicht nennt, nachfragen — niemals ungefragt einen Deep-Research-Lauf starten. Wenn die Sitzung noch nicht angelegt ist, lege sie an via `app_api action=call method=POST path=/api/meetings body={"title": "Termin <Mandantenname> <TT.MM.JJJJ>", "meeting_date": "YYYY-MM-DDTHH:MM:00", "location": "...", "attendees": [...], "meeting_type": "mandant", "mandant_name": "<Mandantenname>"}`.
 2. Sammle die Mandantenakte:
-   - Aktuellste Portfolio-Aufbereitung des Mandanten (`portfolio-aufbereitung`-Skill bzw. `app_api method=GET path=/api/portfolios` zur Mandantensuche).
-   - Letzte freigegebene Reportings und Anschreiben aus `/api/documents/library?release_status=released` mit Mandantenbezug.
-   - Marktbeobachtungs-Briefings des relevanten Zeitraums.
-   - Bei Bedarf Hauswissen-Suche zu Mandantenrichtlinien.
-3. Identifiziere offene Punkte: Welche Themen sind seit dem letzten Kontakt aufgekommen? Was steht in der Mandanten-Korrespondenz noch ungeklaert? Nutze ggf. `hauswissen-suche` fuer den Hausstandard zu Vorgehensweisen.
-4. Erstelle die Briefing-Mappe als Markdown-Dokument mit den Abschnitten:
-   - Kopf: Mandant, Termin (Datum, Uhrzeit, Ort), Teilnehmer, Anlass.
-   - Kurzprofil: Mandantenuebersicht, Anlagestrategie, Risikoprofil.
-   - Portfolio-Stand: Gesamtwert, Allokation, wesentliche Veraenderungen seit letztem Kontakt.
-   - Performance & Markt: Kurze Erlaeuterung der Performance seit letztem Termin, Markteinordnung.
-   - Offene Punkte: Liste der zu besprechenden Themen mit Hintergrund je Punkt.
-   - Gespraechsleitfaden: Vorgeschlagene Reihenfolge der Themen, Schluesselfragen.
-   - Naechste Schritte: Was sollte aus dem Termin folgen?
-5. Lege die Mappe per `manage_documents action=create` mit Titel `Briefing Mandant <Name> <TT.MM.JJJJ>` an, `release_status=draft`.
-6. Verknuepfe das Document mit der Sitzung als Vorbereitungs-Dokument: `app_api action=call method=POST path=/api/meetings/{meeting_id}/prepare body={"document_id": "<doc_id>"}`.
-7. Wende den Hausstandard an (siehe `m-und-s-hausstandard`): Tonalitaet, Datums- und Zahlenformat, Quellenangabe bei Marktaussagen.
+3. Aktuellste Portfolio-Aufbereitung des Mandanten (`portfolio-aufbereitung`-Skill bzw. `app_api method=GET path=/api/portfolios` zur Mandantensuche).
+4. Letzte freigegebene Reportings und Anschreiben aus `/api/documents/library?release_status=released` mit Mandantenbezug.
+5. Marktbeobachtungs-Briefings des relevanten Zeitraums. Im Tiefenmodus zusaetzlich `trigger_research` fuer aktuelle Markt-/Themenlage und News zu mandantenrelevanten Titeln; ueber `manage_research` lesen und mit Marker `(Deep Research: <Quelle>, <Stichtag>)` einarbeiten. Im Schnellmodus nur die vorhandenen Briefings.
+6. Bei Bedarf Hauswissen-Suche zu Mandantenrichtlinien.
+7. Identifiziere offene Punkte: Welche Themen sind seit dem letzten Kontakt aufgekommen? Was steht in der Mandanten-Korrespondenz noch ungeklaert? Nutze ggf. `hauswissen-suche` fuer den Hausstandard zu Vorgehensweisen.
+8. Erstelle die Briefing-Mappe als Markdown-Dokument mit den Abschnitten:
+9. Kopf: Mandant, Termin (Datum, Uhrzeit, Ort), Teilnehmer, Anlass.
+10. Kurzprofil: Mandantenuebersicht, Anlagestrategie, Risikoprofil.
+11. Portfolio-Stand: Gesamtwert, Allokation, wesentliche Veraenderungen seit letztem Kontakt.
+12. Performance & Markt: Kurze Erlaeuterung der Performance seit letztem Termin, Markteinordnung.
+13. Offene Punkte: Liste der zu besprechenden Themen mit Hintergrund je Punkt.
+14. Gespraechsleitfaden: Vorgeschlagene Reihenfolge der Themen, Schluesselfragen.
+15. Naechste Schritte: Was sollte aus dem Termin folgen?
+16. Lege die Mappe per `manage_documents action=create` mit Titel `Briefing Mandant <Name> <TT.MM.JJJJ>` an, `release_status=draft`.
+17. Verknuepfe das Document mit der Sitzung als Vorbereitungs-Dokument: `app_api action=call method=POST path=/api/meetings/{meeting_id}/prepare body={"document_id": "<doc_id>"}`.
+18. Wende den Hausstandard an (siehe `m-und-s-hausstandard`): Tonalitaet, Datums- und Zahlenformat, Quellenangabe bei Marktaussagen.
 
 ## Pitfalls
 
@@ -54,3 +55,4 @@ Triggere diesen Skill, wenn ein Mandantengespraech oder Termin vorbereitet werde
 - Mappe ist als `preparation_document_id` an der Sitzung verknuepft.
 - Hausstandard angewendet (Datumsformat, Tonalitaet).
 - Hinweis "Vorbereitung — interner Gebrauch" am Anfang.
+- Recherchemodus ist geklaert (bei fehlender Angabe wurde nachgefragt); bei Tiefenanalyse sind Deep-Research-Befunde markiert, mit Quelle und Stichtag belegt und von der internen Mandantenakte getrennt.

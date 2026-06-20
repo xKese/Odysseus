@@ -18,12 +18,12 @@ Triggere diesen Skill, wenn eine Anlageausschuss-Sitzung vorbereitet werden soll
 
 ## Procedure
 
-1. Klaere die Sitzung: Datum, Titel, Teilnehmer. Wenn die Sitzung noch nicht existiert, lege sie an via `app_api action=call method=POST path=/api/meetings body={"title": "Anlageausschuss <TT.MM.JJJJ>", "meeting_date": "YYYY-MM-DDTHH:MM:00", "location": "...", "attendees": [...]}`.
+1. Klaere die Sitzung: Datum, Titel, Teilnehmer. Klaere zusaetzlich den Recherchemodus (siehe Skill `recherche-modus`): Schnellanalyse (nur interne Reports/Briefings/Hauswissen) oder Tiefenanalyse (zusaetzlich `trigger_research` fuer Markt-/Themenrecherche zu den Beschlussvorlagen und unabhaengige Einordnung vorgelegter Opportunitaeten). Wenn der Nutzer den Modus nicht nennt, nachfragen — niemals ungefragt einen Deep-Research-Lauf starten. Wenn die Sitzung noch nicht existiert, lege sie an via `app_api action=call method=POST path=/api/meetings body={"title": "Anlageausschuss <TT.MM.JJJJ>", "meeting_date": "YYYY-MM-DDTHH:MM:00", "location": "...", "attendees": [...]}`.
 2. Sammle die fuer die Sitzung relevanten Reports und Briefings:
 3. Marktbeobachtungs-Briefings der letzten Woche (`app_api action=call method=GET path=/api/documents/library?release_status=draft` und nach Titel filtern)
 4. Aktuelle Reporting-Entwuerfe und Portfolio-Aufbereitungen
 5. Freigegebene Hauswissen-Dokumente zur Anlagepolitik (`hauswissen-suche` ggf. nutzen)
-6. Identifiziere Beschlussbedarf: Welche Allokations-, Mandanten- oder Strategiethemen brauchen eine Entscheidung? Formuliere je Punkt einen kurzen Tagesordnungs-Eintrag.
+6. Identifiziere Beschlussbedarf: Welche Allokations-, Mandanten- oder Strategiethemen brauchen eine Entscheidung? Formuliere je Punkt einen kurzen Tagesordnungs-Eintrag. Im Tiefenmodus die Beschlussvorlagen mit `trigger_research` (Markt-/Themenkontext, unabhaengige Einordnung vorgelegter Opportunitaeten) unterfuettern; ueber `manage_research` lesen und mit Marker `(Deep Research: <Quelle>, <Stichtag>)` einarbeiten, getrennt von den internen Unterlagen.
 7. Erstelle die Sitzungsmappe als Markdown-Dokument mit Abschnitten:
 8. Kopf: Sitzungstitel, Datum, Ort, Teilnehmer
 9. Tagesordnung (nummerierte Liste)
@@ -50,3 +50,4 @@ Triggere diesen Skill, wenn eine Anlageausschuss-Sitzung vorbereitet werden soll
 - Sitzungsmappe ist an die Sitzung via Meeting-Endpoint gebunden (`role=protocol`).
 - Hausstandard angewendet (Datumsformat, Disclaimer).
 - Status `release_status=draft` und Hinweis "Entwurf — vor Sitzung pruefen" am Anfang.
+- Recherchemodus ist geklaert (bei fehlender Angabe wurde nachgefragt); bei Tiefenanalyse sind Deep-Research-Befunde markiert, mit Quelle und Stichtag belegt und von den internen Unterlagen getrennt.

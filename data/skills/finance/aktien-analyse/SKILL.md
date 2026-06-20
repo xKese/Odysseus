@@ -1,6 +1,6 @@
 ---
 name: aktien-analyse
-description: "Vergleich und Analyse von Einzelaktien auf Basis von Geschaeftsberichten, Quartalsmitteilungen, Anbieter-Seiten oder manuell eingegebenen Daten. Erstellt professionelle Auswertungen auf Deutsch in drei Detailstufen: Kurzuebersicht (Kundenkommunikation), Detailanalyse (intern) und Peer-Vergleich (mehrere Aktien). Ausgabe als Word-Dokument (.docx) oder Fliesstext im Chat."
+description: "Vergleich und Analyse von Einzelaktien auf Basis von Geschaeftsberichten, Quartalsmitteilungen, Anbieter-Seiten oder manuell eingegebenen Daten. Erstellt professionelle Auswertungen auf Deutsch in drei Detailstufen: Kurzuebersicht (Kundenkommunikation), Detailanalyse (intern) und Peer-Vergleich (mehrere Aktien). Wahlweise als Schnellanalyse oder Tiefenanalyse mit Deep Research. Ausgabe als Word-Dokument (.docx) oder Fliesstext im Chat."
 version: 1.0.0
 category: finance
 tags: [aktien, einzelaktie, fundamentalanalyse, vermoegensverwaltung, m-und-s]
@@ -18,8 +18,8 @@ Triggere diesen Skill, wenn der Nutzer eine Aktie, ein boersennotiertes Unterneh
 
 ## Procedure
 
-1. Frage nach gewuenschter Ausfuehrlichkeitsstufe und Anlagezweck: (1) Kurzuebersicht fuer Kundenkommunikation, (2) Detailanalyse intern, (3) Peer-Vergleich fuer mehrere Aktien. Klaere bei Family-Office-Mandanten den Charakter (Buy-and-Hold, Dividendenfokus, opportunistisch). Falls Quellen-PDFs noch fehlen, frage nach Upload oder ISIN/WKN.
-2. Lies alle bereitgestellten Geschaeftsberichte/Quartalsmitteilungen und extrahiere die Pflichtfelder gemaess Kennzahlentabellen im body_extra (Stammdaten, Bewertung, Fundamentaldaten, Dividenden, Risiko). Verwende `read_file` fuer hochgeladene Dateien, `web_fetch` nur fuer oeffentliche Anbieter-Seiten (Yahoo Finance, Comdirect, Onvista, Investor Relations). Fuer tiefere Recherche `trigger_research` mit konkreter Frage und Quellenpflicht — nie unbelegte Aussagen uebernehmen.
+1. Frage nach gewuenschter Ausfuehrlichkeitsstufe, Anlagezweck UND Recherchemodus: Ausfuehrlichkeit (1) Kurzuebersicht fuer Kundenkommunikation, (2) Detailanalyse intern, (3) Peer-Vergleich fuer mehrere Aktien; Recherchemodus (siehe Skill `recherche-modus`) Schnellanalyse (nur Upload-Dokumente + gezielter `web_fetch`) oder Tiefenanalyse (zusaetzlich `trigger_research`). Wenn der Nutzer den Modus nicht nennt, nachfragen — niemals ungefragt einen Deep-Research-Lauf starten. In dieser Domaene validiert Deep Research vor allem: Analystenkonsens und Kursziele, aktuelle News/Ad-hoc-Meldungen, unabhaengige Bewertungskennzahlen und den Wettbewerbsvergleich. Klaere bei Family-Office-Mandanten den Charakter (Buy-and-Hold, Dividendenfokus, opportunistisch). Falls Quellen-PDFs noch fehlen, frage nach Upload oder ISIN/WKN.
+2. Lies alle bereitgestellten Geschaeftsberichte/Quartalsmitteilungen und extrahiere die Pflichtfelder gemaess Kennzahlentabellen im body_extra (Stammdaten, Bewertung, Fundamentaldaten, Dividenden, Risiko). Verwende `read_file` fuer hochgeladene Dateien, `web_fetch` fuer gezielt benannte oeffentliche Anbieter-Seiten (Yahoo Finance, Comdirect, Onvista, Investor Relations). NUR im Tiefenmodus zusaetzlich `trigger_research` mit konkreter Frage und Quellenpflicht; den fertigen Bericht ueber `manage_research` lesen und einarbeiten. Deep-Research-Befunde mit Marker `(Deep Research: <Quelle>, <Stichtag>)` kennzeichnen und von den Geschaeftsbericht-Daten trennen. Im Schnellmodus KEIN `trigger_research`. Nie unbelegte Aussagen uebernehmen.
 3. Markiere jeden nicht direkt im Dokument ausgewiesenen Wert mit `(nicht ausgewiesen)` oder `(berechnet aus: ...)`. Niemals Zahlen schaetzen.
 4. Erstelle fuer jede Aktie drei Bloecke (Charakteristiken, Chancen, Risiken) mit je 4-5 unternehmensspezifischen Stichpunkten. Keine Platituden, keine generischen Risikohinweise (Inflation und Geopolitik gelten fuer alle Aktien — bringen nur dann Mehrwert, wenn das Unternehmen besonders davon betroffen ist).
 5. Baue die Auswertung gemaess der gewaehlten Stufe (siehe body_extra) und formatiere als Markdown (im Chat) oder erzeuge ein DOCX ueber `manage_documents action=create` mit dem Hausstandard-Layout. Bei DOCX `release_status=draft`.
@@ -45,6 +45,7 @@ Triggere diesen Skill, wenn der Nutzer eine Aktie, ein boersennotiertes Unterneh
 - Bei Peer-Vergleichen sind unterschiedliche Bilanzierungsstandards (IFRS/US-GAAP) als Fussnote gekennzeichnet.
 - Disclaimer aus Hausstandard, Stichtag der Daten und vollstaendige Quellenangabe sind enthalten.
 - Output ist auf Deutsch, professioneller Ton, ohne emojis ausser dem Warnhinweis fuer fehlende Werte.
+- Recherchemodus ist geklaert (bei fehlender Angabe wurde nachgefragt) und im Kopf des Outputs vermerkt; bei Tiefenanalyse sind Deep-Research-Befunde als solche markiert, mit Quelle und Stichtag belegt und von den Geschaeftsbericht-Daten getrennt.
 
 ### Pflichtfelder (Stammdaten)
 

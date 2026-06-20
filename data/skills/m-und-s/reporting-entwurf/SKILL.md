@@ -18,8 +18,8 @@ Triggere diesen Skill, wenn ein Mandantenreporting, Quartalsbericht, Monatsberic
 
 ## Procedure
 
-1. Klaere die Berichtsparameter: Mandantenname, Quartal/Monat, Stichtag, Berichtswaehrung. Wenn Daten fehlen, gezielt nachfragen.
-2. Sammle die Inhaltsbausteine: Performance-Tabelle (YTD / 1J / 3J p.a. mit Benchmark), Asset-Allokation, Top-Positionen, Risikokennzahlen (Volatilitaet, Max. Drawdown, Sharpe), Markt-/Strategieausblick. Daten kommen entweder aus dem Hauswissen (`hauswissen-suche`), aus hochgeladenen Auswertungen oder ueber explizite Mandanten-Inputs des Mitarbeiters.
+1. Klaere die Berichtsparameter: Mandantenname, Quartal/Monat, Stichtag, Berichtswaehrung. Klaere zusaetzlich den Recherchemodus (siehe Skill `recherche-modus`): Schnellanalyse (nur interne Daten + Upload) oder Tiefenanalyse (zusaetzlich `trigger_research` fuer Marktkontext und Benchmark-Daten des Berichtszeitraums). Wenn der Nutzer den Modus nicht nennt, nachfragen — niemals ungefragt einen Deep-Research-Lauf starten. Wenn Daten fehlen, gezielt nachfragen.
+2. Sammle die Inhaltsbausteine: Performance-Tabelle (YTD / 1J / 3J p.a. mit Benchmark), Asset-Allokation, Top-Positionen, Risikokennzahlen (Volatilitaet, Max. Drawdown, Sharpe), Markt-/Strategieausblick. Daten kommen entweder aus dem Hauswissen (`hauswissen-suche`), aus hochgeladenen Auswertungen oder ueber explizite Mandanten-Inputs des Mitarbeiters. NUR im Tiefenmodus den Markt-/Strategieausblick mit `trigger_research` (Marktkontext, Benchmark-Daten) unterfuettern; den fertigen Bericht ueber `manage_research` lesen und Deep-Research-Befunde mit Marker `(Deep Research: <Quelle>, <Stichtag>)` einarbeiten, getrennt von den Portfoliodaten. Im Schnellmodus KEIN `trigger_research`.
 3. Markiere fehlende Daten als `(noch zu ergaenzen)`. Niemals Zahlen erfinden oder aus dem Modellwissen extrapolieren.
 4. Lade die Hausvorlage ueber `app_api action=call method=GET path=/api/templates/reporting/quartalsreporting-skelett` und rufe `app_api action=call method=POST path=/api/templates/reporting/quartalsreporting-skelett/render body={"mandant": {...}, "stichtag": "...", "perf": {...}, "alloc": {...}, ...}` mit dem zusammengestellten Datenobjekt auf. Antworten enthalten das gerenderte Markdown plus eine Liste `missing_placeholders` — diese Liste explizit im Chat ausweisen.
 5. Wende den Hausstandard an (siehe Skill `m-und-s-hausstandard`): Tonalitaet, Datums- und Zahlenformat, Tabellenformat, Disclaimer.
@@ -40,3 +40,4 @@ Triggere diesen Skill, wenn ein Mandantenreporting, Quartalsbericht, Monatsberic
 - Hausstandard angewendet (Datumsformat, Disclaimer, Tabellenformat).
 - Entwurfs-Vermerk "Entwurf — vor Versand pruefen" ist enthalten.
 - Dokument liegt im Library/Documents als `draft`, nicht als `released`.
+- Recherchemodus ist geklaert (bei fehlender Angabe wurde nachgefragt); bei Tiefenanalyse sind Deep-Research-Befunde markiert, mit Quelle und Stichtag belegt und von den Portfoliodaten getrennt.
