@@ -37,6 +37,8 @@ data/*
 data/skills/_usage.json
 !data/templates/
 !data/metrics/
+# Phase-4-Saatgut Meeder & Seifer:
+!data/standardanfragen/
 logs/
 *.log
 *.db

@@ -616,6 +616,14 @@ app.include_router(setup_portfolio_routes())
 from routes.meeting_routes import setup_meeting_routes
 app.include_router(setup_meeting_routes())
 
+# Standardanfragen-Bibliothek (Meeder & Seifer, Phase 4)
+from routes.standardanfragen_routes import setup_standardanfragen_routes
+app.include_router(setup_standardanfragen_routes())
+
+# Onboarding-Prozesse (Meeder & Seifer, Phase 4)
+from routes.onboarding_routes import setup_onboarding_routes
+app.include_router(setup_onboarding_routes())
+
 # Chat
 from routes.chat_routes import setup_chat_routes
 app.include_router(setup_chat_routes(
