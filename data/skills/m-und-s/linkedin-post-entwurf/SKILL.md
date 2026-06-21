@@ -1,14 +1,15 @@
 ---
 name: linkedin-post-entwurf
-description: "Verfasst einen LinkedIn-Post-Entwurf fuer Meeder und Seifer nach Hausstandard — fuer das persoenliche Profil (Ich-Perspektive) oder die Unternehmensseite (Wir-Perspektive) — als Entwurf zur Freigabe. Veroeffentlichung erfolgt manuell per Copy-Paste."
+description: Verfasst einen LinkedIn-Post-Entwurf fuer Meeder und Seifer nach Hausstandard — fuer das persoenliche Profil (Ich-Perspektive) oder die Unternehmensseite (Wir-Perspektive) — als Entwurf zur Freigabe. Veroeffentlichung erfolgt manuell per Copy-Paste.
 version: 1.0.0
 category: m-und-s
 tags: [linkedin, social-media, schriftverkehr, m-und-s]
 status: published
 confidence: 0.8
 source: imported
+owner: kese
 shared: true
-created: 2026-06-20T00:00:00Z
+created: "2026-06-20T00:00:00Z"
 ---
 
 ## When to Use
@@ -43,8 +44,6 @@ Triggere diesen Skill, wenn ein LinkedIn-Beitrag entworfen werden soll. Trigger-
 - Post hat einen Hook in Zeile 1, kurze Absaetze, sparsame Hashtags (3-5) und ggf. einen Call-to-Action; Laenge LinkedIn-gerecht.
 - Entwurf ist als Document (`release_status=draft`) abgelegt; Hinweis "Entwurf — vor Veroeffentlichung pruefen" steht im Chat.
 
-## Detail: Post-Struktur-Bausteine
-
 Je nach Anlass eine der folgenden Grundformen waehlen:
 
 - **Fachimpuls / Bildungsbeitrag**: Eine Frage oder ein Missverstaendnis als Hook, dann eine kurze, verstaendliche Einordnung aus Sicht der Vermoegensverwaltung, abschliessend eine Einladung zur Diskussion. Ideal fuer Expertise-Aufbau.
@@ -52,18 +51,12 @@ Je nach Anlass eine der folgenden Grundformen waehlen:
 - **Unternehmens-/Team-News**: Anlass (neues Teammitglied, Auszeichnung, Jubilaeum) als Hook, Wir-Perspektive, persoenlich aber serioes; keine vertraulichen Details.
 - **Event/Ankuendigung**: Was, wann, fuer wen als Hook, konkreter Nutzen, klarer Call-to-Action (Anmeldung/Kontakt).
 
-## Detail: Laenge und Hashtags
-
 - **Laenge**: Die ersten ~210 Zeichen erscheinen vor "mehr anzeigen" — der Hook muss dort sitzen. Gesamtlaenge fuer Fach-/Marktposts rund 800-1.300 Zeichen; kurze News duerfen kuerzer sein. Kurze Absaetze (1-3 Saetze), Leerzeilen fuer Lesbarkeit.
 - **Hashtags**: 3-5 gezielte, themenrelevante Hashtags am Ende (z.B. Vermoegensverwaltung, FamilyOffice, Kapitalmarkt, Geldanlage). Keine inflationaeren Hashtag-Wolken, keine generischen Tags.
 - **Call-to-Action**: optional, aber wenn vorhanden konkret (z.B. "Wie sehen Sie das?" fuer Fachimpulse, "Sprechen Sie uns an" fuer Service-Posts). Keine aggressive Akquise.
 
-## Detail: Ton je Account-Typ
-
 - **Persoenliches Profil (Ich)**: erste Person, etwas persoenlicher und nahbarer, eigene Einschaetzung erlaubt; bleibt fachlich serioes, keine reine Selbstdarstellung.
 - **M&S-Unternehmensseite (Wir)**: erste Person Plural, formeller, repraesentiert das Haus; staerkere Compliance-Sensibilitaet, weil als Werbemitteilung einzustufen.
-
-## Detail: Beispiel-Workflow
 
 Mitarbeiter: "Entwirf einen LinkedIn-Post fuer die Unternehmensseite zum Thema Marktausblick Q3":
 
