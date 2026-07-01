@@ -12,7 +12,16 @@
 # host's numeric render group id when needed. See docker/gpu.amd.yml for details.
 services:
   odysseus:
-    build: .
+    build:
+      context: .
+      args:
+        # Meeder & Seifer: Phase-1/2-Workflows brauchen die optionalen
+        # Pakete (PyMuPDF fuer den PDF-Viewer, markitdown fuer Office-
+        # Anhaenge, faster-whisper fuer lokales STT, ddgs fuer DDG-Suche).
+        # Default im Dockerfile ist `false`; hier ueberschrieben, damit
+        # der Container nach `docker compose up -d --build` sofort die
+        # PDF-Vorschau hat, ohne separaten Build-Befehl.
+        INSTALL_OPTIONAL: "true"
     ports:
       - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7000}:7000"
     volumes:
