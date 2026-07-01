@@ -1,0 +1,8 @@
+# gitleaks false-positive allowlist (fingerprints: <commit>:<file>:<rule>:<line>)
+#
+# The `linkedin-client-id` rule matches a 14-char token near the word
+# "LinkedIn". In the LinkedIn-post skill's German documentation the word
+# "Marktkommentar" (14 letters) sits next to "LinkedIn-Beitrag", so the rule
+# fires on prose, not a credential. This skill only drafts posts for manual
+# copy-paste and has no LinkedIn API integration or client id.
+669f91bc0410eb3e7d45d507ca13cb79ff0ecff0:data/skills/m-und-s/linkedin-post-entwurf/SKILL.md:linkedin-client-id:16
